@@ -1,6 +1,7 @@
 users_file = "users.txt"
-log_level = "trace"
-cookie_domain = ""
+log_level = "debug"
+cookie_domain = "nginx.lan"
+router_address = "root@satellite.lan"
 
 [allowed_routes]
 "/" = ["*"]

@@ -68,6 +68,7 @@ async fn main() {
     let auth_state = AuthState {
         rate_limiter: RateLimiter::new(None),
         cookie_domain: config.cookie_domain.clone(),
+        router_address: config.router_address.clone(),
         users_config: users_config.clone(),
         routes_config: routes_config.clone(),
     };
@@ -81,6 +82,7 @@ async fn main() {
             "/auth",
             auth_routes(
                 config.cookie_domain,
+                config.router_address,
                 users_config.clone(),
                 routes_config.clone(),
             ),

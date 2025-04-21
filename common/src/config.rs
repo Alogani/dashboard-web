@@ -11,6 +11,7 @@ const AUTH_SALT: &str = "h0m3w3bs3rv3r_s4lt_f0r_4uth";
 pub struct AppConfig {
     pub log_level: LogLevel,
     pub cookie_domain: String,
+    pub router_address: String,
     pub users_file: String,
     #[serde(flatten)]
     pub routes_config: RoutesConfig,

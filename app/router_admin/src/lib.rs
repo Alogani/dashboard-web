@@ -1,4 +1,4 @@
-use admin_command::router_admin_command_with_auth;
+use admin_command::router_admin_command;
 use askama::Template;
 use auth::AuthState;
 use axum::{
@@ -28,5 +28,5 @@ pub fn router() -> Router<AuthState> {
                 }
             }),
         )
-        .route("/command", get(router_admin_command_with_auth))
+        .route("/command", get(router_admin_command))
 }

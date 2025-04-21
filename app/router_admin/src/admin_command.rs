@@ -5,7 +5,6 @@ use axum::{
     http::{HeaderMap, StatusCode},
     response::{Html, IntoResponse, Response},
 };
-use common::RateLimiter;
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::process::Stdio;
@@ -13,33 +12,15 @@ use tokio::process::Command;
 
 use crate::templates::{RouterAdminCommandResult, RouterAdminError};
 
-pub async fn router_admin_command_with_auth(
-    State(auth_state): State<AuthState>,
-    headers: HeaderMap,
-    Query(params): Query<HashMap<String, String>>,
-    ConnectInfo(addr): ConnectInfo<SocketAddr>,
-) -> Response {
-    // Use the rate limiter from AuthState
-    let rate_limiter = auth_state.rate_limiter.clone();
-
-    // Call the existing function with the rate limiter
-    router_admin_command(
-        headers,
-        State(rate_limiter),
-        Query(params),
-        ConnectInfo(addr),
-    )
-    .await
-}
-
 pub async fn router_admin_command(
+    State(auth_state): State<AuthState>,
     _headers: HeaderMap,
-    State(rate_limiter): State<RateLimiter>,
     Query(params): Query<HashMap<String, String>>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
 ) -> Response {
     // Rate limit by IP
     let ip = addr.ip().to_string();
+    let rate_limiter = auth_state.rate_limiter.clone();
     if !rate_limiter.check_rate_limit(&ip) {
         let template = RouterAdminError {
             message: "Too fast. Wait a sec.",
@@ -55,10 +36,8 @@ pub async fn router_admin_command(
 
     // Map cmd → SSH
     let cmd = params.get("cmd").map(|s| s.as_str()).unwrap_or("");
-    let ssh_cmd = match cmd {
-        "stats" => vec!["root@satellite.lan", "stats"],
-        "reboot" => vec!["root@satellite.lan", "reboot"],
-        "poweroff" => vec!["root@satellite.lan", "poweroff"],
+    match cmd {
+        "stats" | "reboot" | "poweroff" => (),
         _ => {
             let template = RouterAdminError {
                 message: "Invalid command",
@@ -75,7 +54,7 @@ pub async fn router_admin_command(
 
     // Execute SSH command asynchronously
     let output = match Command::new("ssh")
-        .args(&ssh_cmd)
+        .arg(auth_state.router_address)
         .args(vec![
             "-o",
             "BatchMode=yes",
@@ -84,6 +63,7 @@ pub async fn router_admin_command(
             "-o",
             "ConnectTimeout=10",
         ])
+        .arg(cmd)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -94,12 +74,19 @@ pub async fn router_admin_command(
             match child.wait_with_output().await {
                 Ok(output) => {
                     if output.status.success() {
+                        tracing::info!("Command '{}' executed successfully", cmd);
                         String::from_utf8_lossy(&output.stdout).into_owned()
                     } else {
+                        let error = String::from_utf8_lossy(&output.stderr);
+                        tracing::error!(
+                            "Command '{}' failed with exit code {}: {}",
+                            cmd,
+                            output.status,
+                            error
+                        );
                         format!(
                             "Command failed (exit code: {})\nError: {}",
-                            output.status,
-                            String::from_utf8_lossy(&output.stderr)
+                            output.status, error
                         )
                     }
                 }
