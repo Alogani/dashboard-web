@@ -51,21 +51,7 @@ impl AppConfig {
     }
 
     pub fn is_route_allowed(&self, route: &str, username: Option<&str>) -> bool {
-        // Special case for root path "/"
-        if let Some(allowed_users) = self.allowed_routes.get("/") {
-            // Root path should not automatically grant access to all paths
-            // It should only match exactly "/"
-            if route == "/" {
-                if let Some(username) = username {
-                    return allowed_users.contains(&username.to_string())
-                        || allowed_users.contains(&"*".to_string());
-                } else {
-                    return allowed_users.contains(&"*".to_string());
-                }
-            }
-        }
-
-        // Then, check for exact matches which take precedence
+        // First, check for exact matches which take highest precedence
         if let Some(allowed_users) = self.allowed_routes.get(route) {
             // If username is None, only allow access if "*" is in allowed_users
             if let Some(username) = username {
@@ -77,6 +63,9 @@ impl AppConfig {
             } else if allowed_users.contains(&"*".to_string()) {
                 return true;
             }
+            // If we found an exact match but user doesn't have permission, deny access
+            // This prevents parent paths (including "/") from granting access
+            return false;
         }
 
         // Then check for parent paths with proper path segment boundaries
@@ -85,11 +74,6 @@ impl AppConfig {
         paths.sort_by(|(a, _), (b, _)| b.len().cmp(&a.len()));
 
         for (path, allowed_users) in paths {
-            // Skip exact match as we already checked it
-            if path == route {
-                continue;
-            }
-
             // Check if this is a parent path with proper path boundary
             if path.ends_with('/') && route.starts_with(path) {
                 // Path ends with slash, so it's a directory-like path
@@ -102,6 +86,8 @@ impl AppConfig {
                 } else if allowed_users.contains(&"*".to_string()) {
                     return true;
                 }
+                // If we found a matching parent path but user doesn't have permission, deny access
+                return false;
             } else if !path.is_empty() && route.starts_with(&format!("{}/", path)) {
                 // Path doesn't end with slash, ensure we're checking a proper subdirectory
                 // with a path separator and that path is not empty
@@ -114,6 +100,18 @@ impl AppConfig {
                 } else if allowed_users.contains(&"*".to_string()) {
                     return true;
                 }
+                // If we found a matching parent path but user doesn't have permission, deny access
+                return false;
+            }
+        }
+
+        // Special case for root path "/" - only check if no other path matched
+        if let Some(allowed_users) = self.allowed_routes.get("/") {
+            if let Some(username) = username {
+                return allowed_users.contains(&username.to_string())
+                    || allowed_users.contains(&"*".to_string());
+            } else {
+                return allowed_users.contains(&"*".to_string());
             }
         }
 
