@@ -1,5 +1,5 @@
-users_file = "users.txt"
-log_level = "debug"
+users_file = "/etc/home-webserver/users.txt"
+log_level = "info"
 cookie_domain = "nginx.lan"
 router_address = "root@satellite.lan"
 

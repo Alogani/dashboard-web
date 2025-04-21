@@ -1,2 +1,0 @@
-admin = $2b$12$ng3eNIscEBpsyP5tKVFefO7x7pbfyBQd.52svJux2aR5esMM.JAvu
-user = $2b$12$SnNQPnN1em.YlvId83033eKqdcYAvfLFwFU/uCztBLbccZwsJ7TY2
