@@ -1,9 +1,8 @@
 users_file = "users.txt"
 log_level = "trace"
-cookie_domain = "*.localhost"
+cookie_domain = ""
 
 [allowed_routes]
 "/" = ["*"]
 "/landing" = ["*"]
-"/admin" = ["admin"]
-"/api/users" = ["admin", "user"]
+"/router_admin" = ["admin"]
