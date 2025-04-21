@@ -24,12 +24,12 @@ pub async fn auth_middleware(
         return next.run(req).await;
     }
 
-    let routes_config = state.routes_config.read().await;
+    let app_config = state.app_config.read().await;
 
     // Check if user is authenticated
     if let Some(username) = get_user_from_cookie(&state, cookies).await {
         // Check if user has access to this route
-        if routes_config.is_route_allowed(&path, Some(&username)) {
+        if app_config.is_route_allowed(&path, Some(&username)) {
             tracing::debug!("User {} has access to {}", username, path);
             return next.run(req).await;
         } else {
@@ -39,7 +39,7 @@ pub async fn auth_middleware(
         tracing::debug!("No user cookie found");
 
         // Check if unauthenticated users have access to this route
-        if routes_config.is_route_allowed(&path, None) {
+        if app_config.is_route_allowed(&path, None) {
             tracing::debug!("Allowing unauthenticated access to {}", path);
             return next.run(req).await;
         }

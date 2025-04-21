@@ -7,25 +7,23 @@ use tokio::sync::RwLock;
 use tower_cookies::CookieManagerLayer;
 
 use crate::models::AuthState;
-use common::config::{RoutesConfig, UsersConfig};
+use common::config::AppConfig;
 
 mod check_cookie;
 mod login;
 mod logout;
 
+pub use check_cookie::start_cache_cleanup;
+
 pub fn auth_routes(
-    cookie_domain: String,
-    router_address: String,
-    users_config: Arc<RwLock<UsersConfig>>,
-    routes_config: Arc<RwLock<RoutesConfig>>,
+    app_config: Arc<RwLock<AppConfig>>,
+    users_config: Arc<RwLock<common::config::UsersConfig>>,
 ) -> Router<AuthState> {
     let rate_limiter = common::RateLimiter::new(None);
     let state = AuthState {
         rate_limiter,
-        cookie_domain,
-        router_address,
+        app_config,
         users_config,
-        routes_config,
     };
 
     Router::new()

@@ -13,8 +13,8 @@ pub struct AppConfig {
     pub cookie_domain: String,
     pub router_address: String,
     pub users_file: String,
-    #[serde(flatten)]
-    pub routes_config: RoutesConfig,
+    allowed_routes: HashMap<String, Vec<String>>,
+    allowed_subdomains: HashMap<String, Vec<String>>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -26,11 +26,6 @@ pub struct User {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct UsersConfig {
     pub users: HashMap<String, String>,
-}
-
-#[derive(Debug, Deserialize, Serialize, Default)]
-pub struct RoutesConfig {
-    pub allowed_routes: HashMap<String, Vec<String>>,
 }
 
 #[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
@@ -53,6 +48,34 @@ impl AppConfig {
             .map_err(|e| format!("Failed to parse config file: {}", e))?;
 
         Ok(config)
+    }
+
+    pub fn is_route_allowed(&self, route: &str, username: Option<&str>) -> bool {
+        for (path, allowed_users) in &self.allowed_routes {
+            if route == path || route.starts_with(&format!("{}/", path)) {
+                // If username is None, only allow access if "*" is in allowed_users
+                if let Some(username) = username {
+                    return allowed_users.contains(&username.to_string())
+                        || allowed_users.contains(&"*".to_string());
+                } else {
+                    return allowed_users.contains(&"*".to_string());
+                }
+            }
+        }
+        false
+    }
+
+    pub fn is_subdomain_allowed(&self, subdomain: &str, username: Option<&str>) -> bool {
+        if let Some(allowed_users) = self.allowed_subdomains.get(subdomain) {
+            // If username is None, only allow access if "*" is in allowed_users
+            if let Some(username) = username {
+                return allowed_users.contains(&username.to_string())
+                    || allowed_users.contains(&"*".to_string());
+            } else {
+                return allowed_users.contains(&"*".to_string());
+            }
+        }
+        false
     }
 }
 
@@ -120,23 +143,6 @@ impl UsersConfig {
             }
         }
         None
-    }
-}
-
-impl RoutesConfig {
-    pub fn is_route_allowed(&self, route: &str, username: Option<&str>) -> bool {
-        for (path, allowed_users) in &self.allowed_routes {
-            if route == path || route.starts_with(&format!("{}/", path)) {
-                // If username is None, only allow access if "*" is in allowed_users
-                if let Some(username) = username {
-                    return allowed_users.contains(&username.to_string())
-                        || allowed_users.contains(&"*".to_string());
-                } else {
-                    return allowed_users.contains(&"*".to_string());
-                }
-            }
-        }
-        false
     }
 }
 

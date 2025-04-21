@@ -60,7 +60,7 @@ pub async fn login(
                 let expiry = OffsetDateTime::now_utc() + Duration::hours(24);
                 let cookie = Cookie::build(("AuthUser", cookie_hash))
                     .path("/")
-                    .domain(state.cookie_domain)
+                    .domain(state.app_config.read().await.cookie_domain.clone())
                     .expires(expiry)
                     .http_only(true);
 

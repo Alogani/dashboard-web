@@ -54,7 +54,7 @@ pub async fn router_admin_command(
 
     // Execute SSH command asynchronously
     let output = match Command::new("ssh")
-        .arg(auth_state.router_address)
+        .arg(auth_state.app_config.read().await.router_address.clone())
         .args(vec![
             "-o",
             "BatchMode=yes",

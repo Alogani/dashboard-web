@@ -23,6 +23,8 @@ use routes::landing_page;
 
 #[tokio::main]
 async fn main() {
+    auth::start_cache_cleanup();
+
     let args = Args::parse();
 
     // Load the configuration
@@ -62,15 +64,13 @@ async fn main() {
         }
     };
 
-    let routes_config = Arc::new(RwLock::new(config.routes_config));
+    let app_config = Arc::new(RwLock::new(config));
 
     // Create the auth state
     let auth_state = AuthState {
         rate_limiter: RateLimiter::new(None),
-        cookie_domain: config.cookie_domain.clone(),
-        router_address: config.router_address.clone(),
+        app_config: app_config.clone(),
         users_config: users_config.clone(),
-        routes_config: routes_config.clone(),
     };
 
     // Create the router with state and middleware using ServiceBuilder
@@ -80,12 +80,7 @@ async fn main() {
         .nest("/router_admin", router_admin::router())
         .nest(
             "/auth",
-            auth_routes(
-                config.cookie_domain,
-                config.router_address,
-                users_config.clone(),
-                routes_config.clone(),
-            ),
+            auth_routes(app_config.clone(), users_config.clone()),
         )
         .nest_service("/static", ServeDir::new("static"))
         .layer(

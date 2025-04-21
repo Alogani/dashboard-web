@@ -6,4 +6,9 @@ router_address = "root@satellite.lan"
 [allowed_routes]
 "/" = ["*"]
 "/landing" = ["*"]
-"/router_admin" = ["admin"]
+"/router_admin" = ["desktop"]
+
+[allowed_subdomains]
+"incus" = ["desktop"]
+"forgejo" = ["desktop", "laptop"]
+"vaultwarden" = ["*"]
