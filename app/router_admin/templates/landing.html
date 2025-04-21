@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Router Administration{% endblock %}
+
+{% block content %}
+    <h1>Router Administration</h1>
+    <div class="command-buttons">
+        <a href="/router_admin/command?cmd=stats" class="command-button stats">View Router Statistics</a>
+        <a href="/router_admin/command?cmd=reboot" class="command-button reboot">Reboot Router</a>
+        <a href="/router_admin/command?cmd=poweroff" class="command-button poweroff">Power Off Router</a>
+    </div>
+    <a href="/" class="back-link">← Back to Home</a>
+{% endblock %}

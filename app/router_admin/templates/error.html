@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}Router Admin Error{% endblock %}
+
+{% block content %}
+<div class="error">
+    <h1>Error</h1>
+    <p>{{ message }}</p>
+</div>
+<a href="/router_admin" class="back-link">← Back to Router Admin</a>
+{% endblock %}

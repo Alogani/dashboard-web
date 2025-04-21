@@ -1,0 +1,18 @@
+use askama::Template;
+
+#[derive(Template)]
+#[template(path = "landing.html")]
+pub struct RouterAdminLanding;
+
+#[derive(Template)]
+#[template(path = "command_result.html")]
+pub struct RouterAdminCommandResult<'a> {
+    pub cmd: &'a str,
+    pub output: String,
+}
+
+#[derive(Template)]
+#[template(path = "error.html")]
+pub struct RouterAdminError<'a> {
+    pub message: &'a str,
+}

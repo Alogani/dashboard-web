@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="stylesheet" href="/static/css/login.css">
+</head>
+<body>
+    <div class="login-container">
+        <h1>Login</h1>
+        <form action="/auth/login" method="post" class="login-form">
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <div class="form-group">
+                <button type="submit" class="login-button">Login</button>
+            </div>
+            {% if welcome_message != "" %}
+            <div class="welcome-message">
+                {{ welcome_message }}
+            </div>
+            {% endif %}
+            {% if error_message != "" %}
+            <div class="error-message" style="color: red; margin-top: 10px;">
+                {{ error_message }}
+            </div>
+            {% endif %}
+        </form>
+        <div class="logout-link">
+            <a href="/auth/logout">Logout</a>
+        </div>
+    </div>
+
+    <script>
+        // Show welcome message when username is entered
+        document.getElementById('username').addEventListener('input', function() {
+            const username = this.value.trim();
+            const welcomeMessage = document.getElementById('welcomeMessage');
+            const displayUsername = document.getElementById('displayUsername');
+            
+            if (username) {
+                displayUsername.textContent = username;
+                welcomeMessage.style.display = 'block';
+            } else {
+                welcomeMessage.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
