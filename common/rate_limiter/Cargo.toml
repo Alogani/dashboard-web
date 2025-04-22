@@ -4,6 +4,8 @@ version = "0.0.0"
 edition = "2024"
 
 [dependencies]
+local_lru = "0.4.6"
+
 axum.workspace = true
 bcrypt.workspace = true
 serde.workspace = true

@@ -1,4 +1,4 @@
-use admin_command::router_admin_command;
+use admin_cmd::router_admin_command;
 use askama::Template;
 use axum::{
     Router,
@@ -8,7 +8,7 @@ use axum::{
 };
 use state::AppState;
 
-mod admin_command;
+mod admin_cmd;
 mod templates;
 
 use crate::templates::RouterAdminLanding;

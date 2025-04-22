@@ -1,7 +1,7 @@
-users_file = "/etc/home-webserver/users.txt"
+users_file = "/etc/dashboard-web/users.txt"
 log_level = "info"
 cookie_domain = "nginx.lan"
-router_address = "root@satellite.lan"
+static_folder = "/tmp/static"
 
 [allowed_routes]
 "/" = ["*"]
@@ -17,3 +17,18 @@ router_address = "root@satellite.lan"
 "Incus" = "https://incus.nginx.lan"
 "Forgejo" = "https://forgejo.nginx.lan"
 "Vaultwarden" = "https://vaultwarden.nginx.lan"
+
+[admin_commands]
+[admin_commands.hosts]
+local = ""
+router = "root@satellite.lan"
+
+[admin_commands.panels]
+main_panel = "Main Panel"
+router_panel = "Router Panel"
+
+[admin_commands.commands]
+stats = { name = "Router Statistics", host = "router", panel = "router_panel", command = "stats" }
+reboot = { name = "Reboot Router", host = "router", panel = "router_panel", command = "reboot" }
+poweroff = { name = "Power Off Router", host = "router", panel = "router_panel", command = "poweroff" }
+update_dashboard = { name = "Update Dashboard", host = "local", panel = "main_panel", command = "/usr/local/bin/update_dashboard.sh" }

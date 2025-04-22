@@ -3,6 +3,7 @@ use clap::Parser;
 use config::AppConfig;
 use rate_limiter::RateLimiter;
 use routes::get_router;
+use signal_handlers::spawn_sighup_watcher;
 use state::AppState;
 use std::net::SocketAddr;
 
@@ -10,14 +11,13 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod cli_args;
 mod routes;
+mod signal_handlers;
 mod templates;
 
 use cli_args::Args;
 
 #[tokio::main]
 async fn main() {
-    auth::start_cache_cleanup();
-
     let args = Args::parse();
 
     // Load the configuration
@@ -53,9 +53,11 @@ async fn main() {
 
     // Create the auth state
     let app_state = AppState::new(RateLimiter::new(None), config);
-    let app = get_router(axum::extract::State(app_state));
+    let app = get_router(axum::extract::State(app_state.clone()));
 
     tracing::info!("listening on {}", addr);
+
+    spawn_sighup_watcher(app_state);
 
     axum_server::bind(addr)
         .handle(Handle::new())

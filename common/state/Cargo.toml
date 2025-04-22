@@ -4,6 +4,7 @@ version = "0.0.0"
 edition = "2024"
 
 [dependencies]
+app_errors = { path = "../app_errors" }
 config = { path = "../config" }
 rate_limiter = { path = "../rate_limiter" }
 # workspace

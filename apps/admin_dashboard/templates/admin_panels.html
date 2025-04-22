@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panels</title>
+    <style>
+        .panel {
+            border: 1px solid #ccc;
+            margin-bottom: 10px;
+        }
+        .panel-header {
+            background-color: #f1f1f1;
+            padding: 10px;
+            cursor: pointer;
+        }
+        .panel-content {
+            display: none;
+            padding: 10px;
+        }
+        .panel-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1>Admin Panels</h1>
+    {% for (panel, commands) in panels %}
+    <div class="panel">
+        <div class="panel-header" onclick="togglePanel(this)">{{ panel }}</div>
+        <div class="panel-content">
+            {% for command in commands %}
+            <button onclick="executeCommand('{{ command }}')">{{ command }}</button>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+
+    <div id="result"></div>
+
+    <script>
+        function togglePanel(header) {
+            header.nextElementSibling.classList.toggle('active');
+        }
+
+        function executeCommand(cmd) {
+            fetch(`/admin/command?cmd=${cmd}`)
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('result').innerHTML = html;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('result').innerHTML = 'An error occurred';
+                });
+        }
+    </script>
+</body>
+</html>

@@ -1,6 +1,12 @@
 use askama::Template;
 
 #[derive(Template)]
+#[template(path = "admin_panels.html")]
+pub struct AdminPanels<'a> {
+    pub panels: Vec<(&'a str, Vec<&'a str>)>,
+}
+
+#[derive(Template)]
 #[template(path = "landing.html")]
 pub struct RouterAdminLanding;
 

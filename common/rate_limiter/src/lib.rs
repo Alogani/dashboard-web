@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use local_lru::LocalCache;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 /// A simple in-memory per-IP rate limiter
@@ -8,15 +7,14 @@ use std::time::{SystemTime, UNIX_EPOCH};
 /// and allows configuring the minimum time between requests.
 #[derive(Clone)]
 pub struct RateLimiter {
-    requests: Arc<Mutex<HashMap<String, u64>>>,
-    /// Rate limit duration in milliseconds. None means no rate limiting.
+    requests: LocalCache,
     rate_limit_ms: Option<u64>,
 }
 
 impl RateLimiter {
     pub fn new(rate_limit_ms: Option<u64>) -> Self {
         Self {
-            requests: Arc::new(Mutex::new(HashMap::new())),
+            requests: LocalCache::initialize(1000, 60),
             rate_limit_ms,
         }
     }
@@ -34,16 +32,19 @@ impl RateLimiter {
             .as_secs()
             * 1000; // Convert to milliseconds
 
-        let mut map = self.requests.lock().unwrap();
-
-        if let Some(&last) = map.get(ip) {
-            let elapsed_ms = now - last;
-            if elapsed_ms < self.rate_limit_ms.unwrap() {
-                return false;
+        if let Some(last_bytes) = self.requests.get_item(ip) {
+            let last_vec: Vec<u8> = last_bytes.to_vec();
+            if last_vec.len() >= 8 {
+                let last = u64::from_be_bytes(last_vec[..8].try_into().unwrap());
+                let elapsed_ms = now - last;
+                if elapsed_ms < self.rate_limit_ms.unwrap() {
+                    return false;
+                }
             }
         }
 
-        map.insert(ip.to_string(), now);
+        self.requests
+            .add_item(ip, now.to_be_bytes().to_vec().into());
         true
     }
 }

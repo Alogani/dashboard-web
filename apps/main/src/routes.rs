@@ -20,7 +20,7 @@ pub fn get_router(State(app_state): State<AppState>) -> Router {
             "/auth",
             auth_routes(axum::extract::State(app_state.clone())),
         )
-        .nest_service("/static", ServeDir::new("static"))
+        .nest_service("/static", ServeDir::new(app_state.get_static_folder()))
         .layer(tower_cookies::CookieManagerLayer::new())
         .layer(TraceLayer::new_for_http())
         .layer(axum::middleware::from_fn(move |cookies, req, next| {

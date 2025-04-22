@@ -1,29 +1,32 @@
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::collections::HashMap;
 use std::fs;
 use std::net::Ipv4Addr;
 use std::path::Path;
 
+mod admin_command;
+use admin_command::AdminCommands;
 mod user_config;
 pub use user_config::*;
 mod log_level;
 use log_level::LogLevel;
 mod route_check;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct AppConfig {
     #[serde(default = "default_server_address")]
     server_address: Ipv4Addr,
     #[serde(default = "default_server_port")]
     server_port: u16,
+    static_folder: String,
     log_level: LogLevel,
     cookie_domain: String,
-    router_address: String,
     users_file: String,
     allowed_routes: HashMap<String, Vec<String>>,
     allowed_subdomains: HashMap<String, Vec<String>>,
     external_links: HashMap<String, String>,
+    admin_commands: AdminCommands,
 }
 
 fn default_server_address() -> Ipv4Addr {
@@ -45,6 +48,18 @@ impl AppConfig {
         Ok(config)
     }
 
+    pub fn get_admin_commands(&self) -> &AdminCommands {
+        &self.admin_commands
+    }
+
+    pub fn get_cookie_domain(&self) -> &str {
+        &self.cookie_domain
+    }
+
+    pub fn get_external_links(&self) -> &HashMap<String, String> {
+        &self.external_links
+    }
+
     pub fn get_server_address(&self) -> Ipv4Addr {
         self.server_address
     }
@@ -57,19 +72,11 @@ impl AppConfig {
         self.log_level
     }
 
-    pub fn get_cookie_domain(&self) -> &str {
-        &self.cookie_domain
-    }
-
-    pub fn get_router_address(&self) -> &str {
-        &self.router_address
+    pub fn get_static_folder(&self) -> &str {
+        &self.static_folder
     }
 
     pub fn get_users_file(&self) -> &str {
         &self.users_file
-    }
-
-    pub fn get_external_links(&self) -> &HashMap<String, String> {
-        &self.external_links
     }
 }

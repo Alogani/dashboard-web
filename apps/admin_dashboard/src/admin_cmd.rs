@@ -10,7 +10,7 @@ use std::net::SocketAddr;
 use std::process::Stdio;
 use tokio::process::Command;
 
-use crate::templates::{RouterAdminCommandResult, RouterAdminError};
+use crate::templates::{AdminPanels, RouterAdminCommandResult, RouterAdminError};
 
 /// Checks if the request should be rate limited based on IP address
 async fn check_rate_limit(app_state: &AppState, ip: &str) -> Option<Response> {
@@ -31,7 +31,7 @@ async fn check_rate_limit(app_state: &AppState, ip: &str) -> Option<Response> {
 }
 
 async fn execute_command(cmd: &str, ssh_address: &str) -> String {
-    if ssh_address == "" {
+    if ssh_address.is_empty() {
         // For future implementation of local commands
         return format!("Local command execution not implemented for: {}", cmd);
     }
@@ -93,11 +93,39 @@ pub async fn router_admin_command(
         return response;
     }
 
-    // Map cmd → SSH
-    let cmd = params.get("cmd").map(|s| s.as_str()).unwrap_or("");
-    match cmd {
-        "stats" | "reboot" | "poweroff" => (),
-        _ => {
+    let admin_commands = app_state.get_app_config().get_admin_commands();
+
+    // If no command is specified, render the admin panels
+    if !params.contains_key("cmd") {
+        let panels: Vec<(&str, Vec<&str>)> = admin_commands
+            .get_panels()
+            .iter()
+            .map(|(panel_key, _)| {
+                let commands: Vec<&str> = admin_commands
+                    .get_commands()
+                    .iter()
+                    .filter(|(_, cmd)| cmd.panels == *panel_key)
+                    .map(|(cmd_key, _)| cmd_key.as_str())
+                    .collect();
+                (panel_key.as_str(), commands)
+            })
+            .collect();
+
+        let template = AdminPanels { panels };
+        return match template.render() {
+            Ok(html) => Html(html).into_response(),
+            Err(err) => {
+                tracing::error!("Template error: {}", err);
+                StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            }
+        };
+    }
+
+    // Execute the specified command
+    let cmd_key = params.get("cmd").unwrap();
+    let command = match admin_commands.get_command(cmd_key) {
+        Some(cmd) => cmd,
+        None => {
             let template = RouterAdminError {
                 message: "Invalid command",
             };
@@ -111,10 +139,13 @@ pub async fn router_admin_command(
         }
     };
 
-    // Execute the command via SSH
-    let output = execute_command(cmd, app_state.get_router_address()).await;
+    let host = admin_commands.get_host(&command.host).unwrap_or("");
+    let output = execute_command(&command.command, host).await;
 
-    let template = RouterAdminCommandResult { cmd, output };
+    let template = RouterAdminCommandResult {
+        cmd: &command.name,
+        output,
+    };
 
     match template.render() {
         Ok(html) => Html(html).into_response(),
