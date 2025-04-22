@@ -12,3 +12,8 @@ router_address = "root@satellite.lan"
 "incus" = ["desktop"]
 "forgejo" = ["desktop", "laptop"]
 "vaultwarden" = ["*"]
+
+[external_links]
+"Incus" = "https://incus.nginx.lan"
+"Forgejo" = "https://forgejo.nginx.lan"
+"Vaultwarden" = "https://vaultwarden.nginx.lan"

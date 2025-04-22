@@ -1,5 +1,5 @@
 use auth::generate_password_hash;
-use common::config::UsersConfig;
+use config::UsersConfig;
 use std::{
     io::{self, BufRead, Write},
     path::Path,
@@ -165,7 +165,7 @@ fn delete_user(
 
     // List current users first
     list_users(users_config);
-    
+
     if users_config.users.is_empty() {
         return Ok(());
     }
@@ -188,7 +188,10 @@ fn delete_user(
     }
 
     // Confirm deletion
-    print!("Are you sure you want to delete user '{}'? (y/n): ", username);
+    print!(
+        "Are you sure you want to delete user '{}'? (y/n): ",
+        username
+    );
     io::stdout().flush()?;
     input.clear();
     reader.read_line(&mut input)?;

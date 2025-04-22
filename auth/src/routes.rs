@@ -1,13 +1,13 @@
 use axum::{
-    routing::{get, post},
     Router,
+    routing::{get, post},
 };
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tower_cookies::CookieManagerLayer;
 
 use crate::models::AuthState;
-use common::config::AppConfig;
+use config::AppConfig;
 
 mod check_cookie;
 mod login;
@@ -17,7 +17,7 @@ pub use check_cookie::start_cache_cleanup;
 
 pub fn auth_routes(
     app_config: Arc<RwLock<AppConfig>>,
-    users_config: Arc<RwLock<common::config::UsersConfig>>,
+    users_config: Arc<RwLock<config::UsersConfig>>,
 ) -> Router<AuthState> {
     let rate_limiter = common::RateLimiter::new(None);
     let state = AuthState {

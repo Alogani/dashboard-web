@@ -1,7 +1,5 @@
-use common::{
-    config::{AppConfig, UsersConfig},
-    RateLimiter,
-};
+use common::RateLimiter;
+use config::{AppConfig, UsersConfig};
 use serde::Deserialize;
 use std::sync::Arc;
 use tokio::sync::RwLock;

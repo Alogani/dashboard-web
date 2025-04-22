@@ -1,5 +1,8 @@
 use askama::Template;
+use std::collections::HashMap;
 
 #[derive(Template)]
 #[template(path = "landing.html")]
-pub struct MainLanding;
+pub struct LandingPage {
+    pub external_links: HashMap<String, String>,
+}

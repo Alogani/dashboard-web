@@ -12,49 +12,33 @@ use tokio::process::Command;
 
 use crate::templates::{RouterAdminCommandResult, RouterAdminError};
 
-pub async fn router_admin_command(
-    State(auth_state): State<AuthState>,
-    _headers: HeaderMap,
-    Query(params): Query<HashMap<String, String>>,
-    ConnectInfo(addr): ConnectInfo<SocketAddr>,
-) -> Response {
-    // Rate limit by IP
-    let ip = addr.ip().to_string();
+/// Checks if the request should be rate limited based on IP address
+async fn check_rate_limit(auth_state: &AuthState, ip: &str) -> Option<Response> {
     let rate_limiter = auth_state.rate_limiter.clone();
-    if !rate_limiter.check_rate_limit(&ip) {
+    if !rate_limiter.check_rate_limit(ip) {
         let template = RouterAdminError {
             message: "Too fast. Wait a sec.",
         };
         return match template.render() {
-            Ok(html) => Html(html).into_response(),
+            Ok(html) => Some(Html(html).into_response()),
             Err(err) => {
                 tracing::error!("Template error: {}", err);
-                StatusCode::INTERNAL_SERVER_ERROR.into_response()
+                Some(StatusCode::INTERNAL_SERVER_ERROR.into_response())
             }
         };
     }
+    None
+}
 
-    // Map cmd → SSH
-    let cmd = params.get("cmd").map(|s| s.as_str()).unwrap_or("");
-    match cmd {
-        "stats" | "reboot" | "poweroff" => (),
-        _ => {
-            let template = RouterAdminError {
-                message: "Invalid command",
-            };
-            return match template.render() {
-                Ok(html) => Html(html).into_response(),
-                Err(err) => {
-                    tracing::error!("Template error: {}", err);
-                    StatusCode::INTERNAL_SERVER_ERROR.into_response()
-                }
-            };
-        }
-    };
+async fn execute_command(cmd: &str, ssh_address: &String) -> String {
+    if ssh_address == "" {
+        // For future implementation of local commands
+        return format!("Local command execution not implemented for: {}", cmd);
+    }
 
     // Execute SSH command asynchronously
-    let output = match Command::new("ssh")
-        .arg(auth_state.app_config.read().await.router_address.clone())
+    match Command::new("ssh")
+        .arg(ssh_address)
         .args(vec![
             "-o",
             "BatchMode=yes",
@@ -94,7 +78,45 @@ pub async fn router_admin_command(
             }
         }
         Err(e) => format!("Failed to execute SSH: {}", e),
+    }
+}
+
+pub async fn router_admin_command(
+    State(auth_state): State<AuthState>,
+    _headers: HeaderMap,
+    Query(params): Query<HashMap<String, String>>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+) -> Response {
+    // Rate limit by IP
+    let ip = addr.ip().to_string();
+    if let Some(response) = check_rate_limit(&auth_state, &ip).await {
+        return response;
+    }
+
+    // Map cmd → SSH
+    let cmd = params.get("cmd").map(|s| s.as_str()).unwrap_or("");
+    match cmd {
+        "stats" | "reboot" | "poweroff" => (),
+        _ => {
+            let template = RouterAdminError {
+                message: "Invalid command",
+            };
+            return match template.render() {
+                Ok(html) => Html(html).into_response(),
+                Err(err) => {
+                    tracing::error!("Template error: {}", err);
+                    StatusCode::INTERNAL_SERVER_ERROR.into_response()
+                }
+            };
+        }
     };
+
+    // Execute the command via SSH
+    let output = execute_command(
+        cmd,
+        &auth_state.app_config.read().await.router_address.clone(),
+    )
+    .await;
 
     let template = RouterAdminCommandResult { cmd, output };
 

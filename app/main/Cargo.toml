@@ -1,12 +1,13 @@
 [package]
-name = "home-webserver"
+name = "dashboard-web"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 common = { path = "../../common" }
+config = { path = "../../config" }
 auth = { path = "../../auth" }
-router_admin = { path = "../router_admin" }
+admin_dashboard = { path = "../admin_dashboard" }
 clap = { version = "4.4", features = ["derive"] }
 # workspace
 askama.workspace = true

@@ -8,10 +8,10 @@
     <h1>Welcome to the Home Server</h1>
     <div class="links">
         <a href="/auth/login">Login</a>
-        <a href="https://incus.nginx.lan">Incus</a>
-        <a href="https://forgejo.nginx.lan">Forgejo</a>
-        <a href="https://vaultwarden.nginx.lan">Vaultwarden</a>
-        <a href="/router_admin">Router Administration</a>
+        <a href="/router_admin">Administration dashboard</a>
+        {% for (name, url) in external_links %}
+            <a href="{{ url }}">{{ name }}</a>
+        {% endfor %}
     </div>
 </body>
 </html>

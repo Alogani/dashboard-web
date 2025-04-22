@@ -1,11 +1,13 @@
-use auth::auth_routes;
+use askama::Template;
 use auth::AuthState;
-use axum::routing::get;
+use auth::auth_routes;
 use axum::Router;
+use axum::response::Html;
+use axum::routing::get;
 use axum_server::Handle;
 use clap::Parser;
-use common::config::{AppConfig, UsersConfig};
 use common::RateLimiter;
+use config::{AppConfig, UsersConfig};
 use std::{net::SocketAddr, sync::Arc};
 use tokio::sync::RwLock;
 use tower::ServiceBuilder;
@@ -13,13 +15,12 @@ use tower_http::{services::ServeDir, trace::TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod cli;
-mod routes;
 mod templates;
 mod user_management;
 
 use auth::auth_middleware;
 use cli::Args;
-use routes::landing_page;
+use templates::LandingPage;
 
 #[tokio::main]
 async fn main() {
@@ -64,6 +65,10 @@ async fn main() {
         }
     };
 
+    let landing_page = LandingPage {
+        external_links: config.external_links.clone(),
+    };
+
     let app_config = Arc::new(RwLock::new(config));
 
     // Create the auth state
@@ -76,8 +81,8 @@ async fn main() {
     // Create the router with state and middleware using ServiceBuilder
     let auth_state_clone = auth_state.clone();
     let app = Router::new()
-        .route("/", get(landing_page))
-        .nest("/router_admin", router_admin::router())
+        .route("/", get(Html(landing_page.render().unwrap())))
+        .nest("/admin_dashboard", admin_dashboard::router())
         .nest(
             "/auth",
             auth_routes(app_config.clone(), users_config.clone()),
