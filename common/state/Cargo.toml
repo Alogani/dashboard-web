@@ -1,0 +1,18 @@
+[package]
+name = "state"
+version = "0.0.0"
+edition = "2024"
+
+[dependencies]
+config = { path = "../config" }
+rate_limiter = { path = "../rate_limiter" }
+# workspace
+axum.workspace = true
+bcrypt.workspace = true
+serde.workspace = true
+tokio.workspace = true
+toml.workspace = true
+tower.workspace = true
+tower-http.workspace = true
+tracing.workspace = true
+time.workspace = true

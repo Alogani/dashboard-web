@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Home Server</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <h1>Welcome to the Home Server</h1>
+    <div class="links">
+        <a href="/auth/login">Login</a>
+        <a href="/admin_dashboard">Administration dashboard</a>
+        {% for (name, url) in external_links %}
+            <a href="{{ url }}">{{ name }}</a>
+        {% endfor %}
+    </div>
+</body>
+</html>

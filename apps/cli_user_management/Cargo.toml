@@ -1,0 +1,9 @@
+[package]
+name = "cli_user_management"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+app_errors = { path = "../../common/app_errors" }
+auth = { path = "../../common/auth" }
+config = { path = "../../common/config" }

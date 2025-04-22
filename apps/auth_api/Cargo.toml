@@ -1,0 +1,22 @@
+[package]
+name = "auth_api"
+version = "0.0.0"
+edition = "2024"
+
+[dependencies]
+app_errors = { path = "../../common/app_errors" }
+config = { path = "../../common/config" }
+rate_limiter = { path = "../../common/rate_limiter" }
+state = { path = "../../common/state" }
+# workspace
+askama.workspace = true
+axum.workspace = true
+bcrypt.workspace = true
+serde.workspace = true
+tokio.workspace = true
+tower.workspace = true
+tower-cookies.workspace = true
+tower-http.workspace = true
+time.workspace = true
+tracing.workspace = true
+

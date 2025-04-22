@@ -1,0 +1,28 @@
+[package]
+name = "dashboard-web"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+admin_dashboard = { path = "../admin_dashboard" }
+auth_api = { path = "../auth_api" }
+cli_user_management = { path = "../cli_user_management" }
+auth = { path = "../../common/auth" }
+config = { path = "../../common/config" }
+state = { path = "../../common/state" }
+rate_limiter = { path = "../../common/rate_limiter" }
+clap = { version = "4.4", features = ["derive"] }
+# workspace
+askama.workspace = true
+axum.workspace = true
+bcrypt.workspace = true
+serde.workspace = true
+toml.workspace = true
+tokio.workspace = true
+tower.workspace = true
+tower-cookies.workspace = true
+tower-http.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+axum-server = "0.7.2"
+
