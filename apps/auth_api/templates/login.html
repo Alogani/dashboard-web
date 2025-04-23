@@ -1,11 +1,12 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Login</title>
-    <link rel="stylesheet" href="/static/css/styles.css">
+{% extends "base.html" %}
+
+{% block title %}Login{% endblock %}
+
+{% block extra_css %}
     <link rel="stylesheet" href="/static/css/login.css">
-</head>
-<body>
+{% endblock %}
+
+{% block content %}
     <div class="login-container">
         <h1>Login</h1>
         <form action="/auth/login" method="post" class="login-form">
@@ -35,7 +36,9 @@
             <a href="/auth/logout">Logout</a>
         </div>
     </div>
+{% endblock %}
 
+{% block scripts %}
     <script>
         // Show welcome message when username is entered
         document.getElementById('username').addEventListener('input', function() {
@@ -51,5 +54,4 @@
             }
         });
     </script>
-</body>
-</html>
+{% endblock %}

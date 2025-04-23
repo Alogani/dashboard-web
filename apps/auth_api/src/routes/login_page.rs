@@ -6,6 +6,7 @@ use axum::{
     response::{Html, IntoResponse, Response},
 };
 
+use rate_limiter::RateLimiter;
 use state::AppState;
 
 use tower_cookies::Cookies;
@@ -15,7 +16,7 @@ use auth::identify_user_with_cookie;
 
 pub async fn login_page(
     cookies: Cookies,
-    State(state): State<AppState>,
+    State((state, _)): State<(AppState, RateLimiter<u64>)>,
 ) -> Result<Response, AppError> {
     let mut welcome_message = String::new();
 

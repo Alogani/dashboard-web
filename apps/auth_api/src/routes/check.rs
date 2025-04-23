@@ -1,18 +1,19 @@
 use axum::{
     extract::State,
-    http::StatusCode,
-    response::{IntoResponse, Redirect, Response},
+    http::{HeaderMap, HeaderValue, StatusCode},
+    response::{IntoResponse, Response},
 };
+use rate_limiter::RateLimiter;
 use state::AppState;
 use tower_cookies::Cookies;
 
-use auth::{LOGIN_PATH, identify_user_with_cookie, set_redirect_cookie};
+use auth::{identify_user_with_cookie, set_redirect_cookie};
 
 // Only check for subdomains
 pub async fn check(
-    State(state): State<AppState>,
+    State((state, _)): State<(AppState, RateLimiter<u64>)>,
     cookies: Cookies,
-    headers: axum::http::HeaderMap,
+    headers: HeaderMap,
 ) -> Response {
     let username = identify_user_with_cookie(&cookies, &state).await;
 
@@ -24,7 +25,7 @@ pub async fn check(
 
     if subdomain.is_empty() {
         tracing::debug!("No subdomain provided in request");
-        return (StatusCode::BAD_REQUEST, "No subdomain provided".to_string()).into_response();
+        return (StatusCode::BAD_REQUEST, "No subdomain provided").into_response();
     }
 
     if state.is_subdomain_allowed(subdomain, username.as_deref()) {
@@ -35,11 +36,12 @@ pub async fn check(
         );
         let mut response = StatusCode::OK.into_response();
         if let Some(username) = username {
-            response
-                .headers_mut()
-                .insert("X-Authenticated-User", username.parse().unwrap());
+            response.headers_mut().insert(
+                "X-Authenticated-User",
+                HeaderValue::from_str(&username).unwrap(),
+            );
         }
-        return response;
+        response
     } else {
         tracing::debug!(
             "User {:?} is NOT allowed to access subdomain {}",
@@ -59,7 +61,7 @@ pub async fn check(
         // Set the redirect cookie
         set_redirect_cookie(&cookies, &state, &redirect_url);
 
-        // Return a redirect to the login page
-        return Redirect::to(LOGIN_PATH).into_response();
+        // Return an unauthorized status
+        StatusCode::UNAUTHORIZED.into_response()
     }
 }

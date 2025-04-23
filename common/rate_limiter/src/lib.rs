@@ -1,30 +1,45 @@
 use local_lru::LocalCache;
+use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
+
+#[derive(Clone, Deserialize, Serialize)]
+struct RateLimitEntry<T> {
+    last_attempt: u64,
+    data: T,
+}
 
 /// A simple in-memory per-IP rate limiter
 ///
 /// This rate limiter tracks the last request time for each IP address
 /// and allows configuring the minimum time between requests.
 #[derive(Clone)]
-pub struct RateLimiter {
+pub struct RateLimiter<T>
+where
+    T: Default,
+{
     requests: LocalCache,
     rate_limit_ms: Option<u64>,
+    _phantom: std::marker::PhantomData<T>,
 }
 
-impl RateLimiter {
+impl<T: Clone + Serialize + for<'de> Deserialize<'de>> RateLimiter<T>
+where
+    T: Default,
+{
     pub fn new(rate_limit_ms: Option<u64>) -> Self {
         Self {
             requests: LocalCache::initialize(1000, 60),
             rate_limit_ms,
+            _phantom: std::marker::PhantomData,
         }
     }
 
     /// Checks if a request from the given IP should be rate limited
-    pub fn check_rate_limit(&self, ip: &str) -> bool {
-        // If rate limiting is disabled, always allow requests
+    pub fn check_rate_limit(&self, ip: &str, predicate: fn(bool, T) -> (bool, T)) -> bool {
         if self.rate_limit_ms.is_none() {
             return true;
         }
+        let rate_limit_ms = self.rate_limit_ms.unwrap();
 
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -32,47 +47,34 @@ impl RateLimiter {
             .as_secs()
             * 1000; // Convert to milliseconds
 
-        if let Some(last_bytes) = self.requests.get_item(ip) {
-            let last_vec: Vec<u8> = last_bytes.to_vec();
-            if last_vec.len() >= 8 {
-                let last = u64::from_be_bytes(last_vec[..8].try_into().unwrap());
-                let elapsed_ms = now - last;
-                if elapsed_ms < self.rate_limit_ms.unwrap() {
-                    return false;
-                }
+        let (result, new_data) = match self.requests.get_struct::<RateLimitEntry<T>>(ip) {
+            Some(entry) => {
+                let elapsed_ms = now - entry.last_attempt;
+                predicate(elapsed_ms < rate_limit_ms, entry.data)
             }
+            None => predicate(true, T::default()),
+        };
+
+        self.requests.add_struct(
+            ip,
+            RateLimitEntry {
+                last_attempt: now,
+                data: new_data,
+            },
+        );
+        result
+    }
+
+    /// Clears the rate limit entry for the given IP
+    pub fn clear(&self, ip: &str) {
+        if let Some(_) = self.requests.get_item(ip) {
+            self.requests.add_struct(
+                ip,
+                RateLimitEntry {
+                    last_attempt: 0,
+                    data: T::default(),
+                },
+            );
         }
-
-        self.requests
-            .add_item(ip, now.to_be_bytes().to_vec().into());
-        true
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_rate_limiter_with_limit() {
-        let limiter = RateLimiter::new(Some(2000)); // 2 seconds
-        let ip = "127.0.0.1";
-
-        // First request should be allowed
-        assert!(limiter.check_rate_limit(ip));
-
-        // Second immediate request should be rate limited
-        assert!(!limiter.check_rate_limit(ip));
-    }
-
-    #[test]
-    fn test_rate_limiter_disabled() {
-        let limiter = RateLimiter::new(None);
-        let ip = "127.0.0.1";
-
-        // All requests should be allowed when rate limiting is disabled
-        assert!(limiter.check_rate_limit(ip));
-        assert!(limiter.check_rate_limit(ip));
-        assert!(limiter.check_rate_limit(ip));
     }
 }

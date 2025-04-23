@@ -14,8 +14,8 @@ use tokio::process::Command;
 use crate::templates::{ActionResult, AdminConsoleView, ExecutionError};
 
 /// Checks if the request should be rate limited based on IP address
-async fn check_rate_limit(rate_limiter: &RateLimiter, ip: &str) -> Option<Response> {
-    if !rate_limiter.check_rate_limit(ip) {
+fn check_rate_limit(rate_limiter: &RateLimiter<()>, ip: &str) -> Option<Response> {
+    if !rate_limiter.check_rate_limit(ip, |result, _| (result, ())) {
         let template = ExecutionError {
             message: "Too fast. Wait a sec.",
         };
@@ -80,7 +80,7 @@ async fn execute_command(cmd: &str, ssh_address: &str) -> String {
 }
 
 pub async fn execute_admin_action(
-    State((app_state, rate_limiter)): State<(AppState, RateLimiter)>,
+    State((app_state, rate_limiter)): State<(AppState, RateLimiter<()>)>,
     _headers: HeaderMap,
     path_params: Option<Path<String>>,
     _query: Query<HashMap<String, String>>,
@@ -88,7 +88,7 @@ pub async fn execute_admin_action(
 ) -> Response {
     // Rate limit by IP
     let ip = addr.ip().to_string();
-    if let Some(response) = check_rate_limit(&rate_limiter, &ip).await {
+    if let Some(response) = check_rate_limit(&rate_limiter, &ip) {
         return response;
     }
 

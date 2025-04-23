@@ -1,15 +1,18 @@
+use std::net::SocketAddr;
+
 use app_errors::AppError;
 use askama::Template;
 use axum::{
-    extract::{Form, State},
+    extract::{ConnectInfo, Form, State},
     http::StatusCode,
     response::{Html, IntoResponse, Redirect, Response},
 };
+use rate_limiter::RateLimiter;
 use state::AppState;
 use tower_cookies::Cookies;
 use url::Url;
 
-use crate::templates::LoginTemplate;
+use crate::templates::{LoginError, LoginTemplate};
 use auth::{get_redirect_cookie, set_auth_cookie};
 
 use serde::Deserialize;
@@ -20,12 +23,40 @@ pub struct LoginForm {
     pub password: String,
 }
 
+/// Checks if the request should be rate limited based on IP address
+fn check_rate_limit(rate_limiter: &RateLimiter<u64>, ip: &str) -> Option<Response> {
+    if !rate_limiter.check_rate_limit(ip, |attemped_recently, attempt_count| {
+        (attemped_recently && attempt_count > 3, attempt_count + 1)
+    }) {
+        let template = LoginError {
+            message: "Too many logging attemps, please wait.",
+        };
+        return match template.render() {
+            Ok(html) => Some(Html(html).into_response()),
+            Err(err) => {
+                tracing::error!("Template error: {}", err);
+                Some(StatusCode::INTERNAL_SERVER_ERROR.into_response())
+            }
+        };
+    }
+    // In case of success, clear the rate limiter for the IP address
+    rate_limiter.clear(ip);
+    None
+}
+
 pub async fn login(
-    State(state): State<AppState>,
+    State((state, rate_limiter)): State<(AppState, RateLimiter<u64>)>,
     cookies: Cookies,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Form(form): Form<LoginForm>,
 ) -> Result<Response, AppError> {
     tracing::debug!("Login attempt for user: {}", form.username);
+
+    // Rate limit the login attempts
+    let ip = addr.ip().to_string();
+    if let Some(response) = check_rate_limit(&rate_limiter, &ip) {
+        return Ok(response);
+    }
 
     // Check if the user exists and the password is correct
     let users_config = state.get_users_config().await;
