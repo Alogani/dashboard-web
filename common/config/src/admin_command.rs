@@ -3,6 +3,7 @@ use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct AdminCommands {
+    hosts: HashMap<String, String>,
     panels: HashMap<String, String>,
     commands: HashMap<String, Command>,
 }
@@ -46,6 +47,7 @@ impl<'de> Deserialize<'de> for AdminCommands {
         }
 
         Ok(AdminCommands {
+            hosts: temp.hosts,
             panels: temp.panels,
             commands: temp.commands,
         })
@@ -57,7 +59,27 @@ impl AdminCommands {
         &self.panels
     }
 
+    pub fn get_hosts(&self) -> &HashMap<String, String> {
+        &self.hosts
+    }
+
     pub fn get_commands(&self) -> &HashMap<String, Command> {
         &self.commands
+    }
+
+    pub fn get_panels_with_commands(&self) -> Vec<(&str, Vec<(&str, &str)>)> {
+        self.get_panels()
+            .iter()
+            .map(|(panel_key, _)| {
+                let panel_name = self.panels.get(panel_key).unwrap();
+                let commands: Vec<(&str, &str)> = self
+                    .get_commands()
+                    .iter()
+                    .filter(|(_, cmd)| cmd.panel == *panel_key)
+                    .map(|(cmd_key, cmd)| (cmd_key.as_str(), cmd.name.as_str()))
+                    .collect();
+                (panel_name.as_str(), (commands))
+            })
+            .collect()
     }
 }

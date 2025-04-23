@@ -97,21 +97,9 @@ pub async fn router_admin_command(
 
     // If no command is specified, render the admin panels
     if !params.contains_key("cmd") {
-        let panels: Vec<(&str, Vec<&str>)> = admin_commands
-            .get_panels()
-            .iter()
-            .map(|(panel_key, _)| {
-                let commands: Vec<&str> = admin_commands
-                    .get_commands()
-                    .iter()
-                    .filter(|(_, cmd)| cmd.panel == *panel_key)
-                    .map(|(cmd_key, _)| cmd_key.as_str())
-                    .collect();
-                (panel_key.as_str(), commands)
-            })
-            .collect();
-
-        let template = AdminPanels { panels };
+        let template = AdminPanels {
+            panels: admin_commands.get_panels_with_commands(),
+        };
         return match template.render() {
             Ok(html) => Html(html).into_response(),
             Err(err) => {
@@ -139,7 +127,10 @@ pub async fn router_admin_command(
         }
     };
 
-    let host = command.host.clone();
+    // Log the command execution
+    tracing::info!("Executing command: {} ({})", &command.name, cmd_key);
+
+    let host = admin_commands.get_hosts().get(&command.host).unwrap();
     let output = execute_command(&command.command, &host).await;
 
     let template = RouterAdminCommandResult {

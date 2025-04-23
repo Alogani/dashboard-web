@@ -51,8 +51,20 @@ impl UsersConfig {
     }
 
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self, AppError> {
-        let content = fs::read_to_string(path)?;
-        let mut config: UsersConfig = toml::from_str(&content)?;
+        let content = fs::read_to_string(&path).map_err(|e| {
+            AppError::ConfigurationError(format!(
+                "Error encountered while trying to read users config at {:?}: {:?}",
+                path.as_ref().display(),
+                e
+            ))
+        })?;
+        let mut config: UsersConfig = toml::from_str(&content).map_err(|e| {
+            AppError::ConfigurationError(format!(
+                "Error encountered while trying to read users config at {:?}: {:?}",
+                path.as_ref().display(),
+                e
+            ))
+        })?;
 
         // Generate a common salt if it doesn't exist
         if config.common_salt.is_empty() {

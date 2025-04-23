@@ -3,12 +3,8 @@ use askama::Template;
 #[derive(Template)]
 #[template(path = "admin_panels.html")]
 pub struct AdminPanels<'a> {
-    pub panels: Vec<(&'a str, Vec<&'a str>)>,
+    pub panels: Vec<(&'a str, Vec<(&'a str, &'a str)>)>,
 }
-
-#[derive(Template)]
-#[template(path = "landing.html")]
-pub struct RouterAdminLanding;
 
 #[derive(Template)]
 #[template(path = "command_result.html")]
