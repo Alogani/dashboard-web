@@ -1,0 +1,30 @@
+#!/sbin/openrc-run
+
+name="dashboard-web"
+description="Web Dashboard"
+command="/usr/local/bin/dashboard-web"
+command_args="--config /etc/dashboard-web/config.toml"
+command_background="yes"
+pidfile="/run/${RC_SVCNAME}.pid"
+output_log="/var/log/${RC_SVCNAME}.log"
+error_log="/var/log/${RC_SVCNAME}.log"
+
+depend() {
+    need net
+    after firewall
+}
+
+start_pre() {
+    checkpath -f -m 0644 -o root:root "$output_log"
+    checkpath -d -m 0755 -o root:root /etc/home-webserver
+    
+    if [ ! -f /etc/dashboard-web/users.txt ]; then
+        eerror "Users file not found at /etc/dashboard-web/users.txt"
+        return 1
+    fi
+    
+    if [ ! -f /etc/dashboard-web/config.toml ]; then
+        eerror "Config file not found at /etc/dashboard-web/config.toml"
+        return 1
+    fi
+}
