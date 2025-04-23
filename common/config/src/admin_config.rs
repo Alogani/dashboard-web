@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Deserializer};
 use utils::indexed_vector::IndexedVector;
+use utils::string_tuple_vec;
 
 #[derive(Debug)]
 pub struct AdminConsole {
@@ -86,44 +87,11 @@ pub struct HostInfo {
     pub address: String,
 }
 
-mod string_tuple_vec {
-    use serde::de::{MapAccess, Visitor};
-    use serde::{Deserialize, Deserializer};
-    use std::fmt;
-    use std::marker::PhantomData;
-
-    pub fn deserialize<'de, D, V>(deserializer: D) -> Result<Vec<(String, V)>, D::Error>
-    where
-        D: Deserializer<'de>,
-        V: Deserialize<'de>,
-    {
-        struct StringTupleVecVisitor<V>(PhantomData<V>);
-
-        impl<'de, V> Visitor<'de> for StringTupleVecVisitor<V>
-        where
-            V: Deserialize<'de>,
-        {
-            type Value = Vec<(String, V)>;
-
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("a map with string keys")
-            }
-
-            fn visit_map<M>(self, mut access: M) -> Result<Self::Value, M::Error>
-            where
-                M: MapAccess<'de>,
-            {
-                let mut vec = Vec::new();
-
-                while let Some((key, value)) = access.next_entry()? {
-                    vec.push((key, value));
-                }
-
-                Ok(vec)
-            }
-        }
-
-        deserializer.deserialize_map(StringTupleVecVisitor(PhantomData))
+impl AdminConsole {
+    pub fn get_action_by_url(&self, url_name: &str) -> Option<&ActionInfo> {
+        self.actions_lookup
+            .get(url_name)
+            .and_then(|id| self.actions.get(id))
     }
 }
 
@@ -230,13 +198,5 @@ impl<'de> Deserialize<'de> for AdminConsole {
         }
 
         Ok(builder)
-    }
-}
-
-impl AdminConsole {
-    pub fn get_action_by_url(&self, url_name: &str) -> Option<&ActionInfo> {
-        self.actions_lookup
-            .get(url_name)
-            .and_then(|id| self.actions.get(id))
     }
 }

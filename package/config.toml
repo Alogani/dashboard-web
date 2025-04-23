@@ -8,7 +8,7 @@ static_folder = "static"
 [allowed_routes]
 "/" = ["*"]
 "/static/css/" = ["*"]
-"/admin_dashboard/cmd/router_poweroff" = ["admin"]
+"/action_dashboard/cmd/router_poweroff" = ["admin"]
 
 [allowed_subdomains]
 "incus" = ["desktop"]

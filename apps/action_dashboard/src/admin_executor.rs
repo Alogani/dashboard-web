@@ -31,28 +31,26 @@ async fn check_rate_limit(rate_limiter: &RateLimiter, ip: &str) -> Option<Respon
 }
 
 async fn execute_command(cmd: &str, ssh_address: &str) -> String {
-    if ssh_address.is_empty() {
-        // For future implementation of local commands
-        return format!("Local command execution not implemented for: {}", cmd);
-    }
-
-    // Execute SSH command asynchronously
-    match Command::new("ssh")
-        .arg(ssh_address)
-        .args(vec![
-            "-o",
-            "BatchMode=yes",
-            "-o",
-            "StrictHostKeyChecking=accept-new",
-            "-o",
-            "ConnectTimeout=10",
-        ])
-        .arg(cmd)
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-    {
+    let child_process = if ssh_address.is_empty() {
+        Command::new("sh").args(vec!["-c", cmd]).spawn()
+    } else {
+        Command::new("ssh")
+            .arg(ssh_address)
+            .args(vec![
+                "-o",
+                "BatchMode=yes",
+                "-o",
+                "StrictHostKeyChecking=accept-new",
+                "-o",
+                "ConnectTimeout=10",
+            ])
+            .arg(cmd)
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+    };
+    match child_process {
         Ok(child) => {
             // Wait for the command to complete and capture output
             match child.wait_with_output().await {

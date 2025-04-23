@@ -9,7 +9,7 @@ use tower_cookies::Cookies;
 use auth::identify_user_with_cookie;
 
 // Only check for subdomains
-pub async fn check_auth(
+pub async fn check(
     State(state): State<AppState>,
     cookies: Cookies,
     headers: axum::http::HeaderMap,
