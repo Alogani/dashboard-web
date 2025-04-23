@@ -1,12 +1,12 @@
 use axum::{
     extract::State,
     http::StatusCode,
-    response::{IntoResponse, Response},
+    response::{IntoResponse, Redirect, Response},
 };
 use state::AppState;
 use tower_cookies::Cookies;
 
-use auth::identify_user_with_cookie;
+use auth::{LOGIN_PATH, identify_user_with_cookie, set_redirect_cookie};
 
 // Only check for subdomains
 pub async fn check(
@@ -46,10 +46,20 @@ pub async fn check(
             username,
             subdomain
         );
-        return (
-            StatusCode::FORBIDDEN,
-            "You don't have permission to access this resource".to_string(),
-        )
-            .into_response();
+
+        // Get the original URI if available
+        let original_uri = headers
+            .get("x-original-uri")
+            .and_then(|h| h.to_str().ok())
+            .unwrap_or("/");
+
+        // Construct the full URL to redirect back to after login
+        let redirect_url = format!("https://{}.nginx.lan{}", subdomain, original_uri);
+
+        // Set the redirect cookie
+        set_redirect_cookie(&cookies, &state, &redirect_url);
+
+        // Return a redirect to the login page
+        return Redirect::to(LOGIN_PATH).into_response();
     }
 }
