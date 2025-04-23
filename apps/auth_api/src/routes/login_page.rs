@@ -10,8 +10,8 @@ use state::AppState;
 
 use tower_cookies::Cookies;
 
-use crate::auth_cookie::identify_user_with_cookie;
 use crate::templates::LoginTemplate;
+use auth::identify_user_with_cookie;
 
 pub async fn login_page(
     cookies: Cookies,
@@ -19,7 +19,7 @@ pub async fn login_page(
 ) -> Result<Response, AppError> {
     let mut welcome_message = String::new();
 
-    if let Some(username) = identify_user_with_cookie(cookies, &state).await {
+    if let Some(username) = identify_user_with_cookie(&cookies, &state).await {
         welcome_message = format!("Welcome back, {}!", username);
     }
 

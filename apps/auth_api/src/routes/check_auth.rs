@@ -6,7 +6,7 @@ use axum::{
 use state::AppState;
 use tower_cookies::Cookies;
 
-use crate::auth_cookie::identify_user_with_cookie;
+use auth::identify_user_with_cookie;
 
 // Only check for subdomains
 pub async fn check_auth(
@@ -14,7 +14,7 @@ pub async fn check_auth(
     cookies: Cookies,
     headers: axum::http::HeaderMap,
 ) -> Response {
-    let username = identify_user_with_cookie(cookies, &state).await;
+    let username = identify_user_with_cookie(&cookies, &state).await;
 
     // Get subdomain from headers
     let subdomain = headers

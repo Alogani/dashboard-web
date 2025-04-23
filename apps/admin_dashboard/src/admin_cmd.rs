@@ -104,7 +104,7 @@ pub async fn router_admin_command(
                 let commands: Vec<&str> = admin_commands
                     .get_commands()
                     .iter()
-                    .filter(|(_, cmd)| cmd.panels == *panel_key)
+                    .filter(|(_, cmd)| cmd.panel == *panel_key)
                     .map(|(cmd_key, _)| cmd_key.as_str())
                     .collect();
                 (panel_key.as_str(), commands)
@@ -123,7 +123,7 @@ pub async fn router_admin_command(
 
     // Execute the specified command
     let cmd_key = params.get("cmd").unwrap();
-    let command = match admin_commands.get_command(cmd_key) {
+    let command = match admin_commands.get_commands().get(cmd_key) {
         Some(cmd) => cmd,
         None => {
             let template = RouterAdminError {
@@ -139,8 +139,8 @@ pub async fn router_admin_command(
         }
     };
 
-    let host = admin_commands.get_host(&command.host).unwrap_or("");
-    let output = execute_command(&command.command, host).await;
+    let host = command.host.clone();
+    let output = execute_command(&command.command, &host).await;
 
     let template = RouterAdminCommandResult {
         cmd: &command.name,

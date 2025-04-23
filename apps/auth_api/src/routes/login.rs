@@ -8,7 +8,8 @@ use axum::{
 use state::AppState;
 use tower_cookies::Cookies;
 
-use crate::{auth_cookie::set_auth_cookie, templates::LoginTemplate};
+use crate::templates::LoginTemplate;
+use auth::{get_redirect_cookie, set_auth_cookie};
 
 use serde::Deserialize;
 
@@ -32,8 +33,11 @@ pub async fn login(
         tracing::debug!("Login successful for user: {}", form.username);
 
         set_auth_cookie(&cookies, &state, &form.username).await?;
-
-        Ok(Redirect::to("/").into_response())
+        if let Some(last_route) = get_redirect_cookie(&cookies) {
+            Ok(Redirect::to(&last_route).into_response())
+        } else {
+            Ok(Redirect::to("/").into_response())
+        }
     } else {
         tracing::debug!("Invalid username or password for {}", form.username);
 

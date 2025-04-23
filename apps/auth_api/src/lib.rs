@@ -1,4 +1,3 @@
-mod auth_cookie;
 mod routes;
 mod templates;
 

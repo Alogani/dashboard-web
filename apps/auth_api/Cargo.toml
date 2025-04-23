@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 app_errors = { path = "../../common/app_errors" }
+auth = { path = "../../common/auth" }
 config = { path = "../../common/config" }
 rate_limiter = { path = "../../common/rate_limiter" }
 state = { path = "../../common/state" }

@@ -5,8 +5,6 @@ static_folder = "/tmp/static"
 
 [allowed_routes]
 "/" = ["*"]
-"/landing" = ["*"]
-"/router_admin" = ["desktop"]
 
 [allowed_subdomains]
 "incus" = ["desktop"]
