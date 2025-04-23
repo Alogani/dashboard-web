@@ -27,7 +27,7 @@ pub struct LoginForm {
 fn check_rate_limit(rate_limiter: &RateLimiter<u64>, ip: &str) -> Option<Response> {
     if !rate_limiter.check_rate_limit(ip, |rate_ok, attempt_count| {
         tracing::trace!(
-            "Rate limit check: rate_ok: {}, attempt_count: {}",
+            "Login Rate limit check: rate_ok: {}, attempt_count: {}",
             rate_ok,
             attempt_count
         );

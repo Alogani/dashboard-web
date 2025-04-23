@@ -18,7 +18,7 @@ pub fn set_redirect_cookie(cookies: &Cookies, state: &AppState, path: &str) {
 
     // The cookie will be a session cookie (expires when the browser is closed)
     // by not setting an expiration time
-    tracing::trace!("Setting session cookie for path: {}", path);
+    tracing::trace!("Setting redirect cookie for path: {}", path);
     cookies.add(cookie.into());
 }
 

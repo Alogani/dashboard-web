@@ -1,6 +1,6 @@
 use axum::{
     extract::State,
-    http::{HeaderMap, HeaderValue, StatusCode},
+    http::{HeaderMap, HeaderValue, StatusCode, header},
     response::{IntoResponse, Response},
 };
 use rate_limiter::RateLimiter;
@@ -62,6 +62,19 @@ pub async fn check(
         set_redirect_cookie(&cookies, &state, &redirect_url);
 
         // Return an unauthorized status
-        StatusCode::UNAUTHORIZED.into_response()
+        //StatusCode::UNAUTHORIZED.into_response()
+        let mut response = StatusCode::UNAUTHORIZED.into_response();
+
+        // Manually add Set-Cookie header
+        if let Some(cookie) = cookies.get("AuthRedirect2") {
+            response.headers_mut().insert(
+                header::SET_COOKIE,
+                HeaderValue::from_str(&cookie.to_string()).unwrap(),
+            );
+        }
+
+        // Log response headers
+        tracing::debug!("Response headers: {:?}", response.headers());
+        response
     }
 }

@@ -1,6 +1,6 @@
 mod auth_cookie;
 mod middleware;
-mod redirect_cookie;
+pub mod redirect_cookie;
 
 const AUTH_ROUTES: &str = "/auth/";
 const LOGIN_PATH: &str = "/auth/login";

@@ -12,7 +12,7 @@ mod login_page;
 mod logout;
 
 pub fn auth_routes(State(app_state): State<AppState>) -> Router<AppState> {
-    let rate_limiter = rate_limiter::RateLimiter::new(Some(5_000));
+    let rate_limiter = rate_limiter::RateLimiter::new(Some(15_000));
     Router::new()
         .route("/login", get(login_page::login_page))
         .route("/login", post(login::login))
