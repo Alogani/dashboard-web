@@ -13,7 +13,7 @@ use tower_cookies::Cookies;
 use url::Url;
 
 use crate::templates::{LoginError, LoginTemplate};
-use auth::{get_redirect_cookie, set_auth_cookie};
+use auth::{consume_redirect_cookie, set_auth_cookie};
 
 use serde::Deserialize;
 
@@ -44,8 +44,6 @@ fn check_rate_limit(rate_limiter: &RateLimiter<u64>, ip: &str) -> Option<Respons
             }
         };
     }
-    // In case of success, clear the rate limiter for the IP address
-    rate_limiter.clear(ip);
     None
 }
 
@@ -55,7 +53,7 @@ pub async fn login(
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Form(form): Form<LoginForm>,
 ) -> Result<Response, AppError> {
-    tracing::debug!("Login attempt for user: {}", form.username);
+    tracing::trace!("Login attempt for user: {}", form.username);
 
     // Rate limit the login attempts
     let ip = addr.ip().to_string();
@@ -68,12 +66,13 @@ pub async fn login(
 
     if let Ok(true) = users_config.verify_password(&form.username, &form.password) {
         tracing::debug!("Login successful for user: {}", form.username);
+        rate_limiter.clear(&ip);
 
         set_auth_cookie(&cookies, &state, &form.username).await?;
 
         // Get the redirect URL or path
-        let redirect_to = get_redirect_cookie(&cookies).unwrap_or_else(|| "/".to_string());
-        tracing::debug!("Redirect after login: {}", redirect_to);
+        let redirect_to = consume_redirect_cookie(&cookies).unwrap_or_else(|| "/".to_string());
+        tracing::trace!("Redirect after login: {}", redirect_to);
 
         // Check if it's a full URL or just a path
         let is_full_url = redirect_to.starts_with("http://") || redirect_to.starts_with("https://");

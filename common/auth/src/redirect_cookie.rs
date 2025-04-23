@@ -18,11 +18,11 @@ pub fn set_redirect_cookie(cookies: &Cookies, state: &AppState, path: &str) {
 
     // The cookie will be a session cookie (expires when the browser is closed)
     // by not setting an expiration time
-
+    tracing::trace!("Setting session cookie for path: {}", path);
     cookies.add(cookie.into());
 }
 
-pub fn get_redirect_cookie(cookies: &Cookies) -> Option<String> {
+pub fn consume_redirect_cookie(cookies: &Cookies) -> Option<String> {
     cookies.get(COOKIE_NAME).map(|cookie| {
         let path = cookie.value().to_string();
         cookies.remove(Cookie::new(COOKIE_NAME, "")); // Remove the cookie after reading
