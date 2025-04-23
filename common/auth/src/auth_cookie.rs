@@ -3,7 +3,7 @@ use state::AppState;
 use time::{Duration, OffsetDateTime};
 use tower_cookies::{Cookie, Cookies};
 
-const COOKIE_NAME: &str = "auth_user";
+const COOKIE_NAME: &str = "AuthUser";
 const COOKIE_DURATION: Duration = Duration::hours(24);
 
 pub async fn identify_user_with_cookie(cookies: &Cookies, state: &AppState) -> Option<String> {
@@ -31,13 +31,18 @@ pub async fn set_auth_cookie(
             ))?;
 
     let expiry = OffsetDateTime::now_utc() + COOKIE_DURATION;
-    let domain = state.get_cookie_domain().to_string();
-    let cookie = Cookie::build(("AuthUser", public_hash))
+
+    let cookie = Cookie::build((COOKIE_NAME, public_hash))
         .path("/")
-        .domain(domain)
         .expires(expiry)
-        .secure(true)
+        .secure(state.use_secure_cookies())
         .http_only(true);
+    let domain = state.get_cookie_domain().to_string();
+    let cookie = if !domain.is_empty() {
+        cookie.domain(domain)
+    } else {
+        cookie
+    };
 
     cookies.add(cookie.into());
 

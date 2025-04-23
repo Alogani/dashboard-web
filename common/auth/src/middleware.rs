@@ -47,6 +47,6 @@ pub async fn auth_middleware(
 
     // If not authenticated or not authorized, redirect to login
     tracing::debug!("Redirecting to login page");
-    set_redirect_cookie(&cookies, &path);
+    set_redirect_cookie(&cookies, &state, &path);
     Redirect::to(LOGIN_PATH).into_response()
 }

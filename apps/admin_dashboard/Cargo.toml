@@ -7,6 +7,7 @@ edition = "2024"
 state = { path = "../../common/state" }
 auth = { path = "../../common/auth" }
 config = { path = "../../common/config" }
+rate_limiter = { path = "../../common/rate_limiter" }
 # workspace
 askama.workspace = true
 axum.workspace = true

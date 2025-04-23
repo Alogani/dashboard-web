@@ -23,6 +23,7 @@ pub struct AppConfig {
     log_level: LogLevel,
     cookie_domain: String,
     users_file: String,
+    secure_cookies: bool,
     allowed_routes: HashMap<String, Vec<String>>,
     allowed_subdomains: HashMap<String, Vec<String>>,
     external_links: HashMap<String, String>,
@@ -78,5 +79,9 @@ impl AppConfig {
 
     pub fn get_users_file(&self) -> &str {
         &self.users_file
+    }
+
+    pub fn use_secure_cookies(&self) -> bool {
+        self.secure_cookies
     }
 }

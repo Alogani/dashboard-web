@@ -27,6 +27,7 @@ dependencies = [
  "axum-server",
  "bcrypt",
  "config",
+ "rate_limiter",
  "serde",
  "state",
  "tokio",

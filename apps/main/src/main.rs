@@ -1,7 +1,6 @@
 use axum_server::Handle;
 use clap::Parser;
 use config::AppConfig;
-use rate_limiter::RateLimiter;
 use routes::get_router;
 use signal_handlers::spawn_sighup_watcher;
 use state::AppState;
@@ -52,7 +51,7 @@ async fn main() {
     let addr = SocketAddr::from((config.get_server_address(), config.get_server_port()));
 
     // Create the auth state
-    let app_state = AppState::new(RateLimiter::new(None), config);
+    let app_state = AppState::new(config);
     let app = get_router(axum::extract::State(app_state.clone()));
 
     tracing::info!("listening on {}", addr);

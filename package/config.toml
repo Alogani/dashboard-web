@@ -1,11 +1,14 @@
 #users_file = "/etc/dashboard-web/users.txt"
 users_file = "package/users.txt"
 log_level = "trace"
-cookie_domain = "nginx.lan"
+cookie_domain = ""
+secure_cookies = false
 static_folder = "static"
 
 [allowed_routes]
 "/" = ["*"]
+"/static/css/" = ["*"]
+"/admin_dashboard/cmd/router_poweroff" = ["admin"]
 
 [allowed_subdomains]
 "incus" = ["desktop"]
@@ -27,7 +30,7 @@ main_panel = "Main Panel"
 router_panel = "Router Panel"
 
 [admin_commands.commands]
-stats = { name = "Router Statistics", host = "router", panel = "router_panel", command = "stats" }
-reboot = { name = "Reboot Router", host = "router", panel = "router_panel", command = "reboot" }
-poweroff = { name = "Power Off Router", host = "router", panel = "router_panel", command = "poweroff" }
 update_dashboard = { name = "Update Dashboard", host = "local", panel = "main_panel", command = "/usr/local/bin/update_dashboard.sh" }
+stats = { name = "Router Statistics", host = "router", panel = "router_panel", command = "stats" }
+router_reboot = { name = "Reboot Router", host = "router", panel = "router_panel", command = "reboot" }
+router_poweroff = { name = "Power Off Router", host = "router", panel = "router_panel", command = "poweroff" }

@@ -8,14 +8,14 @@
     <link rel="stylesheet" href="/static/css/admin-panels.css">
 </head>
 <body>
-    <h1>Admin Panels</h1>
+    <h1>Admin Dashboard</h1>
     {% for (panel_name, commands) in panels %}
     <div class="panel">
         <div class="panel-header" onclick="togglePanel(this)">{{ panel_name }}</div>
         <div class="panel-content">
             <div class="command-buttons">
                 {% for (command, command_name) in commands %}
-                <a href="/admin_dashboard/command?cmd={{ command }}" class="command-button">{{ command_name }}</a>
+                <a href="/admin_dashboard/cmd/{{ command }}" class="command-button">{{ command_name }}</a>
                 {% endfor %}
             </div>
         </div>

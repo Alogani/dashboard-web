@@ -3,22 +3,19 @@ use std::{ops::Deref, sync::Arc};
 use tokio::sync::{RwLock, RwLockReadGuard};
 
 use config::{AppConfig, UsersConfig};
-use rate_limiter::RateLimiter;
 
 #[derive(Clone)]
 pub struct AppState {
     app_config: Arc<AppConfig>,
     user_config: Arc<RwLock<UsersConfig>>,
-    rate_limiter: RateLimiter,
 }
 
 impl AppState {
-    pub fn new(rate_limiter: RateLimiter, app_config: AppConfig) -> Self {
+    pub fn new(app_config: AppConfig) -> Self {
         let users_config = UsersConfig::from_file(app_config.get_users_file()).unwrap();
         AppState {
             app_config: Arc::new(app_config),
             user_config: Arc::new(RwLock::new(users_config)),
-            rate_limiter,
         }
     }
 
@@ -26,10 +23,6 @@ impl AppState {
         let mut user_config = self.user_config.write().await;
         *user_config = UsersConfig::from_file(self.get_users_file())?;
         Ok(())
-    }
-
-    pub fn get_rate_limiter(&self) -> &RateLimiter {
-        &self.rate_limiter
     }
 
     pub async fn get_users_config(&self) -> RwLockReadGuard<UsersConfig> {

@@ -1,18 +1,25 @@
+use state::AppState;
 use tower_cookies::{Cookie, Cookies};
 
-const COOKIE_NAME: &str = "auth_redirect";
+const COOKIE_NAME: &str = "AuthRedirect";
 
-pub fn set_redirect_cookie(cookies: &Cookies, path: &str) {
-    let mut cookie = Cookie::new(COOKIE_NAME, path.to_string());
-    cookie.set_path("/");
-    cookie.set_http_only(true);
-    cookie.set_secure(true);
-    cookie.set_same_site(tower_cookies::cookie::SameSite::Strict);
+pub fn set_redirect_cookie(cookies: &Cookies, state: &AppState, path: &str) {
+    let cookie = Cookie::build((COOKIE_NAME, path.to_string()))
+        .path("/")
+        .http_only(true)
+        .secure(state.use_secure_cookies())
+        .same_site(tower_cookies::cookie::SameSite::Strict);
+    let domain = state.get_cookie_domain().to_string();
+    let cookie = if !domain.is_empty() {
+        cookie.domain(domain)
+    } else {
+        cookie
+    };
 
     // The cookie will be a session cookie (expires when the browser is closed)
     // by not setting an expiration time
 
-    cookies.add(cookie);
+    cookies.add(cookie.into());
 }
 
 pub fn get_redirect_cookie(cookies: &Cookies) -> Option<String> {

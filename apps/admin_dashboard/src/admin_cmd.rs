@@ -1,9 +1,10 @@
 use askama::Template;
 use axum::{
-    extract::{ConnectInfo, Query, State},
+    extract::{ConnectInfo, Path, Query, State},
     http::{HeaderMap, StatusCode},
     response::{Html, IntoResponse, Response},
 };
+use rate_limiter::RateLimiter;
 use state::AppState;
 use std::collections::HashMap;
 use std::net::SocketAddr;
@@ -13,8 +14,7 @@ use tokio::process::Command;
 use crate::templates::{AdminPanels, RouterAdminCommandResult, RouterAdminError};
 
 /// Checks if the request should be rate limited based on IP address
-async fn check_rate_limit(app_state: &AppState, ip: &str) -> Option<Response> {
-    let rate_limiter = app_state.get_rate_limiter().clone();
+async fn check_rate_limit(rate_limiter: &RateLimiter, ip: &str) -> Option<Response> {
     if !rate_limiter.check_rate_limit(ip) {
         let template = RouterAdminError {
             message: "Too fast. Wait a sec.",
@@ -82,21 +82,25 @@ async fn execute_command(cmd: &str, ssh_address: &str) -> String {
 }
 
 pub async fn router_admin_command(
-    State(app_state): State<AppState>,
+    State((app_state, rate_limiter)): State<(AppState, RateLimiter)>,
     _headers: HeaderMap,
-    Query(params): Query<HashMap<String, String>>,
+    path_params: Option<Path<String>>,
+    Query(_query_params): Query<HashMap<String, String>>, // Renamed to indicate we're not using it
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
 ) -> Response {
     // Rate limit by IP
     let ip = addr.ip().to_string();
-    if let Some(response) = check_rate_limit(&app_state, &ip).await {
+    if let Some(response) = check_rate_limit(&rate_limiter, &ip).await {
         return response;
     }
 
     let admin_commands = app_state.get_app_config().get_admin_commands();
 
+    // Get command from path parameter only
+    let cmd_key = path_params.map(|Path(cmd_name)| cmd_name);
+
     // If no command is specified, render the admin panels
-    if !params.contains_key("cmd") {
+    if cmd_key.is_none() {
         let template = AdminPanels {
             panels: admin_commands.get_panels_with_commands(),
         };
@@ -110,8 +114,8 @@ pub async fn router_admin_command(
     }
 
     // Execute the specified command
-    let cmd_key = params.get("cmd").unwrap();
-    let command = match admin_commands.get_commands().get(cmd_key) {
+    let cmd_key = cmd_key.unwrap();
+    let command = match admin_commands.get_commands().get(&cmd_key) {
         Some(cmd) => cmd,
         None => {
             let template = RouterAdminError {

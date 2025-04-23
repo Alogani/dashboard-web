@@ -1,0 +1,2 @@
+admin = "$2b$12$YvpMoBgRd8djI7y9pc0GU.dG7Ngng.yL97p/Jqu7anJk73Qm9xuQ2"
+user = "$2b$12$yQbDQMjBS6eSWEgjC271j.dnUYQwpt/TNCgH7Sfj86GNGZkyN6VsS"
