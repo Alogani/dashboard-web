@@ -16,8 +16,8 @@ pub fn get_router(State(app_state): State<AppState>) -> Router {
     Router::new()
         .route("/", get(Html(landing_page.render().unwrap())))
         .nest(
-            "/admin_dashboard",
-            admin_dashboard::router(axum::extract::State(app_state.clone())),
+            "/action_dashboard",
+            action_dashboard::router(axum::extract::State(app_state.clone())),
         )
         .nest(
             "/auth",

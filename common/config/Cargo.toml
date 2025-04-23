@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 app_errors = { path = "../app_errors" }
+utils = { path = "../utils" }
 axum.workspace = true
 bcrypt.workspace = true
 rand.workspace = true

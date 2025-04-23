@@ -1,16 +1,16 @@
-use serde::Deserialize;
-use std::collections::HashMap;
-use std::fs;
-use std::net::Ipv4Addr;
-use std::path::Path;
-
-mod admin_command;
-use admin_command::AdminCommands;
+pub mod admin_config;
 mod user_config;
 pub use user_config::*;
 mod log_level;
 use log_level::LogLevel;
 mod route_check;
+
+use admin_config::AdminConsole;
+use serde::Deserialize;
+use std::collections::HashMap;
+use std::fs;
+use std::net::Ipv4Addr;
+use std::path::Path;
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -27,7 +27,7 @@ pub struct AppConfig {
     allowed_routes: HashMap<String, Vec<String>>,
     allowed_subdomains: HashMap<String, Vec<String>>,
     external_links: HashMap<String, String>,
-    admin_commands: AdminCommands,
+    admin_commands: AdminConsole,
 }
 
 fn default_server_address() -> Ipv4Addr {
@@ -49,7 +49,7 @@ impl AppConfig {
         Ok(config)
     }
 
-    pub fn get_admin_commands(&self) -> &AdminCommands {
+    pub fn get_admin_commands(&self) -> &AdminConsole {
         &self.admin_commands
     }
 

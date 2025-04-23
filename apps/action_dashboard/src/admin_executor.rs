@@ -11,12 +11,12 @@ use std::net::SocketAddr;
 use std::process::Stdio;
 use tokio::process::Command;
 
-use crate::templates::{AdminPanels, RouterAdminCommandResult, RouterAdminError};
+use crate::templates::{ActionResult, AdminConsoleView, ExecutionError};
 
 /// Checks if the request should be rate limited based on IP address
 async fn check_rate_limit(rate_limiter: &RateLimiter, ip: &str) -> Option<Response> {
     if !rate_limiter.check_rate_limit(ip) {
-        let template = RouterAdminError {
+        let template = ExecutionError {
             message: "Too fast. Wait a sec.",
         };
         return match template.render() {
@@ -81,11 +81,11 @@ async fn execute_command(cmd: &str, ssh_address: &str) -> String {
     }
 }
 
-pub async fn router_admin_command(
+pub async fn execute_admin_action(
     State((app_state, rate_limiter)): State<(AppState, RateLimiter)>,
     _headers: HeaderMap,
     path_params: Option<Path<String>>,
-    Query(_query_params): Query<HashMap<String, String>>, // Renamed to indicate we're not using it
+    _query: Query<HashMap<String, String>>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
 ) -> Response {
     // Rate limit by IP
@@ -94,15 +94,15 @@ pub async fn router_admin_command(
         return response;
     }
 
-    let admin_commands = app_state.get_app_config().get_admin_commands();
+    let admin_cmds = app_state.get_app_config().get_admin_commands();
 
     // Get command from path parameter only
     let cmd_key = path_params.map(|Path(cmd_name)| cmd_name);
 
     // If no command is specified, render the admin panels
     if cmd_key.is_none() {
-        let template = AdminPanels {
-            panels: admin_commands.get_panels_with_commands(),
+        let template = AdminConsoleView {
+            console: admin_cmds,
         };
         return match template.render() {
             Ok(html) => Html(html).into_response(),
@@ -115,10 +115,10 @@ pub async fn router_admin_command(
 
     // Execute the specified command
     let cmd_key = cmd_key.unwrap();
-    let command = match admin_commands.get_commands().get(&cmd_key) {
+    let cmd_info = match admin_cmds.get_action_by_url(&cmd_key) {
         Some(cmd) => cmd,
         None => {
-            let template = RouterAdminError {
+            let template = ExecutionError {
                 message: "Invalid command",
             };
             return match template.render() {
@@ -132,13 +132,17 @@ pub async fn router_admin_command(
     };
 
     // Log the command execution
-    tracing::info!("Executing command: {} ({})", &command.name, cmd_key);
+    tracing::info!(
+        "Executing command: {} ({})",
+        &cmd_info.command,
+        &cmd_info.url_name
+    );
 
-    let host = admin_commands.get_hosts().get(&command.host).unwrap();
-    let output = execute_command(&command.command, &host).await;
+    let host = admin_cmds.hosts.get(&cmd_info.host).unwrap();
+    let output = execute_command(&cmd_info.command, &host.address).await;
 
-    let template = RouterAdminCommandResult {
-        cmd: &command.name,
+    let template = ActionResult {
+        action_name: &cmd_info.pretty_name,
         output,
     };
 

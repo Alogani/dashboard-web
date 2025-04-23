@@ -1,4 +1,4 @@
-use admin_cmd::router_admin_command;
+use admin_executor::execute_admin_action;
 use askama::Template;
 use axum::{
     Router,
@@ -10,10 +10,10 @@ use axum::{
 use rate_limiter::RateLimiter;
 use state::AppState;
 
-mod admin_cmd;
+mod admin_executor;
 mod templates;
 
-use templates::AdminPanels;
+use templates::AdminConsoleView;
 
 pub fn router(State(state): State<AppState>) -> Router<AppState> {
     let rate_limiter = RateLimiter::new(Some(500));
@@ -22,8 +22,9 @@ pub fn router(State(state): State<AppState>) -> Router<AppState> {
         .route(
             "/",
             get(move || async move {
-                let panels = state_clone.get_admin_commands().get_panels_with_commands();
-                let template = AdminPanels { panels };
+                let template = AdminConsoleView {
+                    console: state_clone.get_admin_commands(),
+                };
                 match template.render() {
                     Ok(html) => Html(html).into_response(),
                     Err(err) => {
@@ -33,6 +34,6 @@ pub fn router(State(state): State<AppState>) -> Router<AppState> {
                 }
             }),
         )
-        .route("/cmd/{cmd_name}", get(router_admin_command))
+        .route("/cmd/{cmd_name}", get(execute_admin_action))
         .with_state((state, rate_limiter))
 }

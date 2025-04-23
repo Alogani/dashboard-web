@@ -1,5 +1,5 @@
 [package]
-name = "admin_dashboard"
+name = "action_dashboard"
 version = "0.1.0"
 edition = "2024"
 
@@ -8,6 +8,7 @@ state = { path = "../../common/state" }
 auth = { path = "../../common/auth" }
 config = { path = "../../common/config" }
 rate_limiter = { path = "../../common/rate_limiter" }
+utils = { path = "../../common/utils" }
 # workspace
 askama.workspace = true
 axum.workspace = true

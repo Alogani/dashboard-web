@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-admin_dashboard = { path = "../admin_dashboard" }
+action_dashboard = { path = "../action_dashboard" }
 auth_api = { path = "../auth_api" }
 cli_user_management = { path = "../cli_user_management" }
 auth = { path = "../../common/auth" }
