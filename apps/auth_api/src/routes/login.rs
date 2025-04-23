@@ -25,8 +25,8 @@ pub struct LoginForm {
 
 /// Checks if the request should be rate limited based on IP address
 fn check_rate_limit(rate_limiter: &RateLimiter<u64>, ip: &str) -> Option<Response> {
-    if !rate_limiter.check_rate_limit(ip, |attemped_recently, attempt_count| {
-        (attemped_recently && attempt_count > 3, attempt_count + 1)
+    if !rate_limiter.check_rate_limit(ip, |rate_ok, attempt_count| {
+        (rate_ok || attempt_count < 3, attempt_count + 1)
     }) {
         let template = LoginError {
             message: "Too many logging attemps, please wait.",

@@ -11,6 +11,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::net::Ipv4Addr;
 use std::path::Path;
+use utils::string_tuple_vec;
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -26,7 +27,8 @@ pub struct AppConfig {
     secure_cookies: bool,
     allowed_routes: HashMap<String, Vec<String>>,
     allowed_subdomains: HashMap<String, Vec<String>>,
-    external_links: HashMap<String, String>,
+    #[serde(with = "string_tuple_vec")]
+    external_links: Vec<(String, String)>,
     admin_commands: AdminConsole,
 }
 
@@ -57,7 +59,7 @@ impl AppConfig {
         &self.cookie_domain
     }
 
-    pub fn get_external_links(&self) -> &HashMap<String, String> {
+    pub fn get_external_links(&self) -> &Vec<(String, String)> {
         &self.external_links
     }
 
