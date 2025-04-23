@@ -43,6 +43,7 @@ pub async fn set_auth_cookie(
     } else {
         cookie
     };
+    tracing::trace!("Setting authentication cookie for user: {}", username);
 
     cookies.add(cookie.into());
 
