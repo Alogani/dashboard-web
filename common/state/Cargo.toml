@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 app_errors = { path = "../app_errors" }
 config = { path = "../config" }
-rate_limiter = { path = "../rate_limiter" }
+limiters_middleware = { path = "../../common/limiters_middleware" }
 # workspace
 axum.workspace = true
 bcrypt.workspace = true

@@ -7,7 +7,7 @@ use axum::{
     http::StatusCode,
     response::{Html, IntoResponse, Redirect, Response},
 };
-use rate_limiter::RateLimiter;
+use limiters_middleware::RateLimiter;
 use state::AppState;
 use tower_cookies::Cookies;
 use url::Url;
@@ -24,15 +24,8 @@ pub struct LoginForm {
 }
 
 /// Checks if the request should be rate limited based on IP address
-fn check_rate_limit(rate_limiter: &RateLimiter<u64>, ip: &str) -> Option<Response> {
-    if !rate_limiter.check_rate_limit(ip, |rate_ok, attempt_count| {
-        tracing::trace!(
-            "Login Rate limit check: rate_ok: {}, attempt_count: {}",
-            rate_ok,
-            attempt_count
-        );
-        (rate_ok || attempt_count < 3, attempt_count + 1)
-    }) {
+fn check_rate_limit(rate_limiter: &RateLimiter, ip: &str) -> Option<Response> {
+    if !rate_limiter.check_limit(ip) {
         let template = LoginError {
             message: "Too many logging attemps, please wait.",
         };
@@ -48,7 +41,7 @@ fn check_rate_limit(rate_limiter: &RateLimiter<u64>, ip: &str) -> Option<Respons
 }
 
 pub async fn login(
-    State((state, rate_limiter)): State<(AppState, RateLimiter<u64>)>,
+    State((state, rate_limiter)): State<(AppState, RateLimiter)>,
     cookies: Cookies,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Form(form): Form<LoginForm>,

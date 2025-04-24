@@ -10,7 +10,7 @@ cli_user_management = { path = "../cli_user_management" }
 auth = { path = "../../common/auth" }
 config = { path = "../../common/config" }
 state = { path = "../../common/state" }
-rate_limiter = { path = "../../common/rate_limiter" }
+limiters_middleware = { path = "../../common/limiters_middleware" }
 clap = { version = "4.4", features = ["derive"] }
 # workspace
 askama.workspace = true

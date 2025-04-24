@@ -3,7 +3,7 @@ use axum::{
     http::{HeaderMap, HeaderValue, StatusCode, header},
     response::{IntoResponse, Response},
 };
-use rate_limiter::RateLimiter;
+use limiters_middleware::RateLimiter;
 use state::AppState;
 use tower_cookies::Cookies;
 
@@ -11,7 +11,7 @@ use auth::{identify_user_with_cookie, set_redirect_cookie};
 
 // Only check for subdomains
 pub async fn check(
-    State((state, _)): State<(AppState, RateLimiter<u64>)>,
+    State((state, _)): State<(AppState, RateLimiter)>,
     cookies: Cookies,
     headers: HeaderMap,
 ) -> Response {

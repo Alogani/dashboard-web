@@ -12,7 +12,7 @@ dependencies = [
  "axum-server",
  "bcrypt",
  "config",
- "rate_limiter",
+ "limiters_middleware",
  "serde",
  "state",
  "tokio",
@@ -172,7 +172,7 @@ dependencies = [
  "axum",
  "bcrypt",
  "config",
- "rate_limiter",
+ "limiters_middleware",
  "serde",
  "state",
  "time",
@@ -193,7 +193,7 @@ dependencies = [
  "axum",
  "bcrypt",
  "config",
- "rate_limiter",
+ "limiters_middleware",
  "serde",
  "state",
  "time",
@@ -497,7 +497,7 @@ dependencies = [
  "clap",
  "cli_user_management",
  "config",
- "rate_limiter",
+ "limiters_middleware",
  "serde",
  "state",
  "tokio",
@@ -942,6 +942,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d750af042f7ef4f724306de029d18836c26c1765a54a6a3f094cbd23a7267ffa"
 
 [[package]]
+name = "limiters_middleware"
+version = "0.0.0"
+dependencies = [
+ "axum",
+ "bcrypt",
+ "local_lru",
+ "serde",
+ "time",
+ "tokio",
+ "toml",
+ "tower",
+ "tower-http",
+ "tracing",
+]
+
+[[package]]
 name = "litemap"
 version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1178,22 +1194,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rate_limiter"
-version = "0.0.0"
-dependencies = [
- "axum",
- "bcrypt",
- "local_lru",
- "serde",
- "time",
- "tokio",
- "toml",
- "tower",
- "tower-http",
- "tracing",
-]
-
-[[package]]
 name = "redox_syscall"
 version = "0.5.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1396,7 +1396,7 @@ dependencies = [
  "axum",
  "bcrypt",
  "config",
- "rate_limiter",
+ "limiters_middleware",
  "serde",
  "time",
  "tokio",

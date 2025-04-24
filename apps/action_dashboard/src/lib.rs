@@ -7,7 +7,7 @@ use axum::{
     response::{Html, IntoResponse},
     routing::get,
 };
-use rate_limiter::RateLimiter;
+use limiters_middleware::RateLimiter;
 use state::AppState;
 
 mod admin_executor;
@@ -16,7 +16,7 @@ mod templates;
 use templates::AdminConsoleView;
 
 pub fn router(State(state): State<AppState>) -> Router<AppState> {
-    let rate_limiter = RateLimiter::new(Some(500));
+    let rate_limiter = RateLimiter::new(Some(500), None);
     let state_clone = state.clone();
     Router::new()
         .route(
