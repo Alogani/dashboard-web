@@ -8,7 +8,7 @@ pub fn set_redirect_cookie(cookies: &Cookies, state: &AppState, path: &str) {
         .path("/")
         .http_only(true)
         .secure(state.use_secure_cookies())
-        .same_site(tower_cookies::cookie::SameSite::Strict);
+        .same_site(tower_cookies::cookie::SameSite::Lax);
     let domain = state.get_cookie_domain().to_string();
     let cookie = if !domain.is_empty() {
         cookie.domain(domain)
