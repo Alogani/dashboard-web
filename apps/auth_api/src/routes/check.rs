@@ -15,7 +15,9 @@ pub async fn check(
     cookies: Cookies,
     headers: HeaderMap,
 ) -> Response {
-    let username = identify_user_with_cookie(&cookies, &state).await;
+    let username = identify_user_with_cookie(&cookies, &state)
+        .await
+        .unwrap_or(None);
 
     // Get subdomain from headers
     let subdomain = headers

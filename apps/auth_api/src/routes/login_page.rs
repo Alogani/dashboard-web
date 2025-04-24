@@ -20,8 +20,14 @@ pub async fn login_page(
 ) -> Result<Response, AppError> {
     let mut welcome_message = String::new();
 
-    if let Some(username) = identify_user_with_cookie(&cookies, &state).await {
-        welcome_message = format!("Welcome back, {}!", username);
+    match identify_user_with_cookie(&cookies, &state).await {
+        Ok(Some(username)) => {
+            welcome_message = format!("Welcome back, {}!", username);
+        }
+        Ok(None) => {}
+        Err(_) => {
+            welcome_message = format!("Unknown user, please login");
+        }
     }
 
     let template = LoginTemplate {

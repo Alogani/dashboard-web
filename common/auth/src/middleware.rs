@@ -27,22 +27,24 @@ pub async fn auth_middleware(
     let app_config = state.get_app_config();
 
     // Check if user is authenticated
-    if let Some(username) = identify_user_with_cookie(&cookies, &state).await {
-        // Check if user has access to this route
-        if app_config.is_route_allowed(&path, Some(&username)) {
-            tracing::debug!("User {} has access to {}", username, path);
-            return next.run(req).await;
-        } else {
-            tracing::debug!("User {} does NOT have access to {}", username, path);
+    match identify_user_with_cookie(&cookies, &state).await {
+        Ok(Some(username)) => {
+            // Check if user has access to this route
+            if app_config.is_route_allowed(&path, Some(&username)) {
+                tracing::debug!("User {} has access to {}", username, path);
+                return next.run(req).await;
+            } else {
+                tracing::debug!("User {} does NOT have access to {}", username, path);
+            }
         }
-    } else {
-        tracing::debug!("No user cookie found");
+        Ok(None) => tracing::debug!("No user cookie found"),
+        Err(_) => tracing::debug!("Error identifying user with cookie"),
+    }
 
-        // Check if unauthenticated users have access to this route
-        if app_config.is_route_allowed(&path, None) {
-            tracing::debug!("Allowing unauthenticated access to {}", path);
-            return next.run(req).await;
-        }
+    // Check if unauthenticated users have access to this route
+    if app_config.is_route_allowed(&path, None) {
+        tracing::debug!("Allowing unauthenticated access to {}", path);
+        return next.run(req).await;
     }
 
     // If not authenticated or not authorized, redirect to login

@@ -6,14 +6,24 @@ use tower_cookies::{Cookie, Cookies};
 const COOKIE_NAME: &str = "AuthUser";
 const COOKIE_DURATION: Duration = Duration::hours(24);
 
-pub async fn identify_user_with_cookie(cookies: &Cookies, state: &AppState) -> Option<String> {
-    let public_hash = cookies.get(COOKIE_NAME).map(|c| c.value().to_string())?;
+pub async fn identify_user_with_cookie(
+    cookies: &Cookies,
+    state: &AppState,
+) -> Result<Option<String>, ()> {
+    let cookie = if let Some(cookie) = cookies.get(COOKIE_NAME) {
+        cookie
+    } else {
+        return Ok(None);
+    };
+
+    let public_hash = cookie.value().to_string();
 
     state
         .get_users_config()
         .await
         .get_username_from_public_hash(&public_hash)
-        .cloned()
+        .map(|username| Some(username.clone()))
+        .ok_or(())
 }
 
 pub async fn set_auth_cookie(
