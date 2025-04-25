@@ -8,6 +8,7 @@ use state::AppState;
 use tower_cookies::Cookies;
 
 use auth::{identify_user_with_cookie, set_redirect_cookie};
+use utils::http_helpers::extract_path_from_url;
 
 // Only check for subdomains
 pub async fn check(
@@ -30,7 +31,16 @@ pub async fn check(
         return (StatusCode::BAD_REQUEST, "No subdomain provided").into_response();
     }
 
-    if state.is_subdomain_allowed(subdomain, username.as_deref()) {
+    // Get the original URI if available
+    let original_uri = headers
+        .get("x-original-uri")
+        .and_then(|h| h.to_str().ok())
+        .unwrap_or("/");
+
+    // Extract path from the original URI
+    let path = extract_path_from_url(original_uri).unwrap_or(original_uri.to_string());
+
+    if state.is_access_allowed(Some(&subdomain), &path, username.as_deref()) {
         tracing::debug!(
             "User {:?} is allowed to access subdomain {}",
             username,
@@ -51,17 +61,8 @@ pub async fn check(
             subdomain
         );
 
-        // Get the original URI if available
-        let original_uri = headers
-            .get("x-original-uri")
-            .and_then(|h| h.to_str().ok())
-            .unwrap_or("/");
-
-        // Construct the full URL to redirect back to after login
-        let redirect_url = format!("https://{}.nginx.lan{}", subdomain, original_uri);
-
         // Set the redirect cookie
-        set_redirect_cookie(&cookies, &state, &redirect_url);
+        set_redirect_cookie(&cookies, &state, (Some(subdomain.to_string()), path));
 
         // Return an unauthorized status
         //StatusCode::UNAUTHORIZED.into_response()

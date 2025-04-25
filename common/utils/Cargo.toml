@@ -4,4 +4,7 @@ version = "0.0.0"
 edition = "2024"
 
 [dependencies]
+app_errors.workspace = true
+
 serde.workspace = true
+url.workspace = true

@@ -12,6 +12,13 @@ lto = true
 
 
 [workspace.dependencies]
+app_errors = { path = "./common/app_errors" }
+auth = { path = "./common/auth" }
+config = { path = "./common/config" }
+limiters_middleware = { path = "./common/limiters_middleware" }
+state = { path = "./common/state" }
+utils = { path = "./common/utils" }
+# external
 askama = "0.13.1"
 axum = { version = "0.8.3", features = ["macros"]}
 bcrypt = "0.17"

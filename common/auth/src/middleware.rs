@@ -30,7 +30,7 @@ pub async fn auth_middleware(
     match identify_user_with_cookie(&cookies, &state).await {
         Ok(Some(username)) => {
             // Check if user has access to this route
-            if app_config.is_route_allowed(&path, Some(&username)) {
+            if app_config.is_access_allowed(None, &path, Some(&username)) {
                 tracing::debug!("User {} has access to {}", username, path);
                 return next.run(req).await;
             } else {
@@ -42,13 +42,13 @@ pub async fn auth_middleware(
     }
 
     // Check if unauthenticated users have access to this route
-    if app_config.is_route_allowed(&path, None) {
+    if app_config.is_access_allowed(None, &path, None) {
         tracing::debug!("Allowing unauthenticated access to {}", path);
         return next.run(req).await;
     }
 
     // If not authenticated or not authorized, redirect to login
     tracing::debug!("Redirecting to login page");
-    set_redirect_cookie(&cookies, &state, &path);
+    set_redirect_cookie(&cookies, &state, (None, path));
     Redirect::to(LOGIN_PATH).into_response()
 }

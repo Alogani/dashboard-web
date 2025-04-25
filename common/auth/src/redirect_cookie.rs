@@ -1,10 +1,31 @@
+use serde::{Deserialize, Serialize};
 use state::AppState;
 use tower_cookies::{Cookie, Cookies};
 
 const COOKIE_NAME: &str = "AuthRedirect";
 
-pub fn set_redirect_cookie(cookies: &Cookies, state: &AppState, path: &str) {
-    let cookie = Cookie::build((COOKIE_NAME, path.to_string()))
+#[derive(Serialize, Deserialize)]
+struct RedirectData {
+    subdomain: Option<String>,
+    path: String,
+}
+
+pub fn set_redirect_cookie(
+    cookies: &Cookies,
+    state: &AppState,
+    redirection: (Option<String>, String),
+) {
+    tracing::trace!("Setting redirect cookie for redirection: {:?}", redirection);
+    let redirect_data = RedirectData {
+        subdomain: redirection.0,
+        path: redirection.1,
+    };
+    let serialized = serde_json::to_string(&redirect_data).unwrap_or_else(|_| {
+        tracing::error!("Failed to serialize redirect data");
+        "{}".to_string()
+    });
+
+    let cookie = Cookie::build((COOKIE_NAME, serialized))
         .path("/")
         .http_only(true)
         .secure(state.use_secure_cookies())
@@ -18,14 +39,21 @@ pub fn set_redirect_cookie(cookies: &Cookies, state: &AppState, path: &str) {
 
     // The cookie will be a session cookie (expires when the browser is closed)
     // by not setting an expiration time
-    tracing::trace!("Setting redirect cookie for path: {}", path);
     cookies.add(cookie.into());
 }
 
-pub fn consume_redirect_cookie(cookies: &Cookies) -> Option<String> {
-    cookies.get(COOKIE_NAME).map(|cookie| {
-        let path = cookie.value().to_string();
-        cookies.remove(Cookie::new(COOKIE_NAME, "")); // Remove the cookie after reading
-        path
+pub fn consume_redirect_cookie(cookies: &Cookies) -> Option<(Option<String>, String)> {
+    cookies.get(COOKIE_NAME).and_then(|cookie| {
+        let serialized_value = cookie.value();
+        // Remove the cookie after reading
+        cookies.remove(Cookie::new(COOKIE_NAME, ""));
+
+        match serde_json::from_str::<RedirectData>(serialized_value) {
+            Ok(redirect_data) => Some((redirect_data.subdomain, redirect_data.path)),
+            Err(err) => {
+                tracing::error!("Failed to deserialize redirect cookie: {}", err);
+                None
+            }
+        }
     })
 }

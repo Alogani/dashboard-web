@@ -4,19 +4,21 @@ version = "0.0.0"
 edition = "2024"
 
 [dependencies]
-app_errors = { path = "../app_errors" }
-config = { path = "../config" }
-limiters_middleware = { path = "../../common/limiters_middleware" }
-state = { path = "../state" }
+app_errors.workspace = true
+config.workspace = true
+limiters_middleware.workspace = true
+state.workspace = true
 # workspace
 askama.workspace = true
 axum.workspace = true
 bcrypt.workspace = true
 serde.workspace = true
+serde_json.workspace = true
+toml.workspace = true
 tokio.workspace = true
 tower.workspace = true
 tower-cookies.workspace = true
 tower-http.workspace = true
 time.workspace = true
 tracing.workspace = true
-
+tracing-subscriber.workspace = true

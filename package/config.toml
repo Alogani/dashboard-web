@@ -5,15 +5,14 @@ cookie_domain = ""
 secure_cookies = false
 static_folder = "static"
 
-[allowed_routes]
+[access_rules]
 "/" = ["*"]
 "/static/css/" = ["*"]
 "/action_dashboard/cmd/router_poweroff" = ["admin"]
-
-[allowed_subdomains]
-"incus" = ["desktop"]
-"forgejo" = ["desktop", "laptop"]
-"vaultwarden" = ["*"]
+"incus@/" = ["desktop"]
+"forgejo@/" = ["desktop", "laptop"]
+"vaultwarden@/" = ["*"]
+"vaultwarden@/admin" = ["desktop"]
 
 [external_links]
 "Incus" = "https://incus.nginx.lan"

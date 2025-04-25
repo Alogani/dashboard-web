@@ -4,14 +4,19 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-action_dashboard = { path = "../action_dashboard" }
-auth_api = { path = "../auth_api" }
-cli_user_management = { path = "../cli_user_management" }
-auth = { path = "../../common/auth" }
-config = { path = "../../common/config" }
-state = { path = "../../common/state" }
-limiters_middleware = { path = "../../common/limiters_middleware" }
 clap = { version = "4.4", features = ["derive"] }
+axum-server = "0.7.2"
+auth_api = { path = "../auth_api" }
+action_dashboard = { path = "../action_dashboard" }
+cli_user_management = { path = "../cli_user_management" }
+
+
+app_errors.workspace = true
+auth.workspace = true
+config.workspace = true
+limiters_middleware.workspace = true
+state.workspace = true
+utils.workspace = true
 # workspace
 askama.workspace = true
 axum.workspace = true
@@ -24,5 +29,3 @@ tower-cookies.workspace = true
 tower-http.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
-axum-server = "0.7.2"
-

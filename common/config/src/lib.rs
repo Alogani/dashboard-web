@@ -1,9 +1,10 @@
 pub mod admin_config;
 mod user_config;
+use access_check::access_rules_deserialize;
 pub use user_config::*;
 mod log_level;
 use log_level::LogLevel;
-mod route_check;
+mod access_check;
 
 use admin_config::AdminConsole;
 use serde::Deserialize;
@@ -25,8 +26,8 @@ pub struct AppConfig {
     cookie_domain: String,
     users_file: String,
     secure_cookies: bool,
-    allowed_routes: HashMap<String, Vec<String>>,
-    allowed_subdomains: HashMap<String, Vec<String>>,
+    #[serde(deserialize_with = "access_rules_deserialize")]
+    access_rules: HashMap<String, Vec<(String, Vec<String>)>>,
     #[serde(with = "string_tuple_vec")]
     external_links: Vec<(String, String)>,
     admin_commands: AdminConsole,
