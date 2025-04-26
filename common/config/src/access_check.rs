@@ -65,7 +65,7 @@ fn is_route_allowed_impl(
     // Routes are sorted by length in descending order
     for (allowed_route, allowed_users) in allowed_routes {
         if route == allowed_route
-            || (allowed_route.ends_with('/') && route.starts_with(allowed_route))
+            || route.starts_with(&format!("{}/", allowed_route.trim_end_matches('/')))
             || (allowed_route.ends_with('*')
                 && route.starts_with(allowed_route.trim_end_matches('*')))
         {
