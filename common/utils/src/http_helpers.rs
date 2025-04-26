@@ -47,6 +47,6 @@ pub fn remove_cookie(cookies: &Cookies, cookie: &Option<Cookie>) {
     } else {
         new_cookie
     };
-    let new_cookie = new_cookie.expires(time::OffsetDateTime::now_utc() - time::Duration::days(1));
+    //let new_cookie = new_cookie.expires(time::OffsetDateTime::now_utc() - time::Duration::days(1));
     cookies.add(new_cookie.into());
 }
