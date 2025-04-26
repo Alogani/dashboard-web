@@ -14,6 +14,25 @@ static_folder = "package/static"
 users_db = "examples/users_db.txt"
 
 [access_rules]
+# Access rules correspond to a pair of PATH = [aurhorized_users]
+# By default routes are not allowed except explictly allowed.
+# Most precise rules (aka longer urls) take precedence (eg: "/static/css" is a stronger rule than "/static")
+# Special path /auth/ is always authorized
+
+## Concerning path match
+# "/static/myfolder" will match url "/static/myfolder" and any url beggining by "/static/myfolder/" (eg: "/static/myfolder_2" won't be match)
+# "/static/myfolder/" will match url any url under that location but not "/static/css" in itself
+# "/static/myfolder*" will match url any url beginnning by "/static/myfolder", (eg: "/static/myfolder_2", "/static/myfolder/myfile")
+
+## Concerning users
+# ["*"] means that no login is done, so the path is accessible without a login requirement
+# [] means no user allowed
+# ["desktop", "laptop"] means only those two users are authorized
+
+## Concerning subdomain format
+# "vaultwarden@/admin" is translated to vaultwarden.mydomain.topdomain (eg: vaultwarden.nginx.lan/admin)
+# Authorizing a path without subdomain doesn't grant access to the same path on the subdomain (eg: "/admin" won't match "vaultwarden.nginx.lan/admin" but "vaultwarden@/admin" will)
+# So "/" = ["*"] doesn't grant access to any subdomains
 "/" = ["*"]
 "/static/css/" = ["*"]
 "/action_dashboard/cmd/admin_*" = ["desktop", "laptop"]
@@ -24,23 +43,40 @@ users_db = "examples/users_db.txt"
 "sftpgo@/" = ["desktop"]
 "incus@/" = ["desktop"]
 
+
 [external_links]
+# Will fill the dashboard with different subdomains links
 "Vaultwarden" = "https://vaultwarden.nginx.lan"
 "Forgejo" = "https://forgejo.nginx.lan"
 "Sftpgo" = "https://sftpgo.nginx.lan"
 "Incus" = "https://incus.nginx.lan"
 
 [admin_commands]
+# Will fill the command dashboard located at /action_dashboard
 [admin_commands.hosts]
+# FORMAT: id = hostname to use in ssh command 
+# Host argument be used for ssh commands, eg: ssh alogani@server.lan
+# "" means that the command will be executed directly on server
 local = ""
 server = "alogani@server.lan"
 router = "root@router.lan"
 
 [admin_commands.panels]
+# FORMAT: id = Name to display 
 main_panel = "Main Panel"
 router_panel = "Router Panel"
 
 [admin_commands.commands]
+# FORMAT:
+# <KEY> => url used under /action/dashboard/cmd {
+#     name => Pretty name to display in the dashboard,
+#     host => ssh host as defined in [admin_commands.hosts] (must match)
+#     panel => in which panel will it be display, as defined in [admin_commands.panels] (must match)
+#     command => the command that will be really executed (either locally or using ssh)
+# }
+# eg: The following will create an url at /action_dashboard/cmd/uptime_stats that will execute locally `sh -c "uptime"`
+uptime_stats = { name = "uptime", host = "local", panel = "main_panel", command = "uptime" }
+# eg: The following will create an url at /action_dashboard/cmd/admin_stats that will execute locally `ssh alogani@server.lan stats`
 admin_stats = { name = "Server Statistics", host = "server", panel = "main_panel", command = "stats" }
 admin_show_task_report = { name = "Show Tasks Reports", host = "server", panel = "main_panel", command = "show_task_report" }
 admin_clear_task_report = { name = "Clear Tasks Reports", host = "server", panel = "main_panel", command = "clear_task_report" }
