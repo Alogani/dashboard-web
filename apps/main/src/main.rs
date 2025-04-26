@@ -30,7 +30,7 @@ async fn main() {
 
     // If the user wants to manage users, do that and exit
     if args.manage_users {
-        match cli_user_management::manage_users(&config.get_users_file()) {
+        match cli_user_management::manage_users(&config.get_usersdb_path()) {
             Ok(_) => return,
             Err(e) => {
                 eprintln!("Error managing users: {}", e);

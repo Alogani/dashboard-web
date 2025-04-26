@@ -7,6 +7,7 @@ set -e
 INSTALL_DIR="/usr/local/bin"
 CONFIG_DIR="/etc/dashboard-web"
 INIT_SCRIPT="/etc/init.d/dashboard-web"
+STATIC_DIR="$CONFIG_DIR/static"
 
 # Get the script directory
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -20,6 +21,7 @@ fi
 # Create directories
 echo "Creating configuration directory..."
 mkdir -p "$CONFIG_DIR"
+mkdir -p "$STATIC_DIR"
 
 # Install binary
 echo "Installing dashboard-web binary..."
@@ -42,9 +44,19 @@ else
 fi
 
 # Create empty users file if it doesn't exist
-if [ ! -f "$CONFIG_DIR/users.txt" ]; then
-    echo "Creating empty users.txt file..."
-    touch "$CONFIG_DIR/users.txt"
+if [ ! -f "$CONFIG_DIR/users_db.txt" ]; then
+    echo "Creating empty users_db.txt file..."
+    touch "$CONFIG_DIR/users_db.txt"
+fi
+
+# Install static files
+echo "Installing static files..."
+if [ -d "$SCRIPT_DIR/static" ]; then
+    cp -r "$SCRIPT_DIR/static/"* "$STATIC_DIR/"
+    echo "Static files installed to $STATIC_DIR"
+else
+    echo "Warning: Static directory not found at $SCRIPT_DIR/static" >&2
+    echo "Static files were not installed" >&2
 fi
 
 # Install init script
@@ -61,4 +73,4 @@ echo "To start the service now:"
 echo "  rc-service dashboard-web start"
 echo ""
 echo "Configuration is located at $CONFIG_DIR/config.toml"
-echo "Users file is located at $CONFIG_DIR/users.txt"
+echo "Static files are located at $STATIC_DIR"

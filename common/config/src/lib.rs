@@ -11,7 +11,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::fs;
 use std::net::Ipv4Addr;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use utils::string_tuple_vec;
 
 #[derive(Debug, Deserialize)]
@@ -21,10 +21,10 @@ pub struct AppConfig {
     server_address: Ipv4Addr,
     #[serde(default = "default_server_port")]
     server_port: u16,
-    static_folder: String,
+    static_folder: PathBuf,
     log_level: LogLevel,
     cookie_domain: String,
-    users_file: String,
+    users_db: PathBuf,
     secure_cookies: bool,
     cookie_duration: u32,
     #[serde(deserialize_with = "access_rules_deserialize")]
@@ -49,6 +49,13 @@ impl AppConfig {
 
         let config = AppConfig::deserialize(deserializer)
             .map_err(|e| format!("Failed to parse config file: {}", e))?;
+
+        if !config.static_folder.exists() {
+            tracing::warn!(
+                "Static folder does not exist: {}",
+                config.static_folder.display()
+            );
+        }
 
         Ok(config)
     }
@@ -81,12 +88,12 @@ impl AppConfig {
         self.log_level
     }
 
-    pub fn get_static_folder(&self) -> &str {
+    pub fn get_static_folder(&self) -> &PathBuf {
         &self.static_folder
     }
 
-    pub fn get_users_file(&self) -> &str {
-        &self.users_file
+    pub fn get_usersdb_path(&self) -> &PathBuf {
+        &self.users_db
     }
 
     pub fn use_secure_cookies(&self) -> bool {

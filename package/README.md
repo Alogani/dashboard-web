@@ -6,11 +6,7 @@ This directory contains scripts and configuration files for building, deploying,
 
 ### Build Scripts
 
-- **build-alpine.sh**: Shell script for building the application in an Alpine Linux environment. This script is optimized for creating lightweight Docker containers.
-
-### Configuration Files
-
-- **config.toml**: Main configuration file for the application. Contains settings for database connections, server parameters, and other application-specific configurations.
+- **build-alpine.sh**: Simple shell script to build the binary for alpine linux and put it in package.
 
 ### Installation Scripts
 
@@ -18,7 +14,7 @@ This directory contains scripts and configuration files for building, deploying,
 
 ### Service Scripts
 
-- **dashboard-web-init-script**: Initialization script for the dashboard web service. This script is used to start the web dashboard component of the application as a system service.
+- **openrc-init**: Initialization script for the dashboard web service. This script is used to start the web dashboard component of the application as a system service.
 
 ## Usage
 

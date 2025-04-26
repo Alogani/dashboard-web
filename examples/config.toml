@@ -1,0 +1,47 @@
+# This configuration file is read at startup
+# In case of change, you must restart the application, this will expire all authentication cookie, making a new login required
+# If you changed only the passwords, you cann send SIGHUP to reload the users and passwords without restarting
+
+# Example of a full configuration file close to what I currently use but tweaked for debugging
+
+log_level = "trace"
+cookie_domain = ""
+secure_cookies = false
+cookie_duration = 24
+static_folder = "package/static"
+users_db = "examples/users_db.txt"
+
+[access_rules]
+"/" = ["*"]
+"/static/css/" = ["*"]
+"/action_dashboard/cmd/admin_*" = ["desktop", "laptop"]
+"/action_dashboard/cmd/router_poweroff" = ["desktop", "laptop"]
+"vaultwarden@/" = ["*"]
+"vaultwarden@/admin" = ["desktop"]
+"forgejo@/" = ["desktop", "laptop"]
+"sftpgo@/" = ["desktop"]
+"incus@/" = ["desktop"]
+
+[external_links]
+"Vaultwarden" = "https://vaultwarden.nginx.lan"
+"Forgejo" = "https://forgejo.nginx.lan"
+"Sftpgo" = "https://sftpgo.nginx.lan"
+"Incus" = "https://incus.nginx.lan"
+
+[admin_commands]
+[admin_commands.hosts]
+local = ""
+server = "alogani@server.lan"
+router = "root@router.lan"
+
+[admin_commands.panels]
+main_panel = "Main Panel"
+router_panel = "Router Panel"
+
+[admin_commands.commands]
+admin_stats = { name = "Server Statistics", host = "server", panel = "main_panel", command = "stats" }
+admin_show_task_report = { name = "Show Tasks Reports", host = "server", panel = "main_panel", command = "show_task_report" }
+admin_clear_task_report = { name = "Clear Tasks Reports", host = "server", panel = "main_panel", command = "clear_task_report" }
+router_stats = { name = "Router Statistics", host = "router", panel = "router_panel", command = "stats" }
+router_reboot = { name = "Reboot Router", host = "router", panel = "router_panel", command = "reboot" }
+router_poweroff = { name = "Power Off Router", host = "router", panel = "router_panel", command = "poweroff" }
