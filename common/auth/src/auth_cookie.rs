@@ -16,6 +16,10 @@ pub async fn identify_user_with_cookie(
     };
 
     let public_hash = cookie.value().to_string();
+    if public_hash.is_empty() {
+        tracing::trace!("Empty cookie value for authentication");
+        return Ok(None);
+    };
 
     state
         .get_users_config()
@@ -59,8 +63,17 @@ pub async fn set_auth_cookie(
     Ok(())
 }
 
-pub fn clear_auth_cookie(cookies: &Cookies) {
+pub fn clear_auth_cookie(cookies: &Cookies, state: &AppState) {
     let mut cookie = Cookie::new(COOKIE_NAME, "");
-    cookie.set_path("/");
+    let domain = state.get_cookie_domain().to_string();
+    if !domain.is_empty() {
+        cookie.set_domain(domain);
+    }
+
+    // Set other attributes to match how the cookie was set
+    cookie.set_http_only(true);
+    cookie.set_secure(state.use_secure_cookies());
+
     cookies.remove(cookie);
+    tracing::trace!("Cleared authentication cookie");
 }
