@@ -7,4 +7,6 @@ edition = "2024"
 app_errors.workspace = true
 
 serde.workspace = true
+time.workspace = true
+tower-cookies.workspace = true
 url.workspace = true

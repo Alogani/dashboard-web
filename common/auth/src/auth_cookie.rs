@@ -2,8 +2,9 @@ use app_errors::AppError;
 use state::AppState;
 use time::{Duration, OffsetDateTime};
 use tower_cookies::{Cookie, Cookies};
+use utils::http_helpers::remove_cookie;
 
-const COOKIE_NAME: &str = "AuthUser";
+pub const COOKIE_NAME: &str = "AuthUser";
 
 pub async fn identify_user_with_cookie(
     cookies: &Cookies,
@@ -47,9 +48,10 @@ pub async fn set_auth_cookie(
 
     let cookie = Cookie::build((COOKIE_NAME, public_hash))
         .path("/")
-        .expires(expiry)
         .secure(state.use_secure_cookies())
-        .http_only(true);
+        .http_only(true)
+        .expires(expiry);
+
     let domain = state.get_cookie_domain().to_string();
     let cookie = if !domain.is_empty() {
         cookie.domain(domain)
@@ -63,17 +65,7 @@ pub async fn set_auth_cookie(
     Ok(())
 }
 
-pub fn clear_auth_cookie(cookies: &Cookies, state: &AppState) {
-    let mut cookie = Cookie::new(COOKIE_NAME, "");
-    let domain = state.get_cookie_domain().to_string();
-    if !domain.is_empty() {
-        cookie.set_domain(domain);
-    }
-
-    // Set other attributes to match how the cookie was set
-    cookie.set_http_only(true);
-    cookie.set_secure(state.use_secure_cookies());
-
-    cookies.remove(cookie);
+pub fn remove_auth_cookie(cookies: &Cookies) {
+    remove_cookie(&cookies, &cookies.get(COOKIE_NAME));
     tracing::trace!("Cleared authentication cookie");
 }

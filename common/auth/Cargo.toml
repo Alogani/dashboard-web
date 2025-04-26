@@ -8,6 +8,7 @@ app_errors.workspace = true
 config.workspace = true
 limiters_middleware.workspace = true
 state.workspace = true
+utils.workspace = true
 # workspace
 askama.workspace = true
 axum.workspace = true

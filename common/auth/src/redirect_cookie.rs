@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use state::AppState;
 use tower_cookies::{Cookie, Cookies};
+use utils::http_helpers::remove_cookie;
 
 const COOKIE_NAME: &str = "AuthRedirect";
 
@@ -45,8 +46,8 @@ pub fn set_redirect_cookie(
 pub fn consume_redirect_cookie(cookies: &Cookies) -> Option<(Option<String>, String)> {
     cookies.get(COOKIE_NAME).and_then(|cookie| {
         let serialized_value = cookie.value();
-        // Remove the cookie after reading
-        cookies.remove(Cookie::new(COOKIE_NAME, ""));
+        remove_cookie(&cookies, &cookies.get(COOKIE_NAME));
+        tracing::trace!("Cleared redirect cookie");
 
         match serde_json::from_str::<RedirectData>(serialized_value) {
             Ok(redirect_data) => Some((redirect_data.subdomain, redirect_data.path)),
