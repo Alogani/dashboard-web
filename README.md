@@ -8,6 +8,7 @@ A multi-purpose web dashboard built with Rust and Axum framework.
 - **Advanced Authentication**: Secure authentication system with domain and path-level access control (on both static and dynamic resources)
 - **Remote Command Execution**: Run commands on remote servers and view their output directly in the dashboard
 - **Rate Limiting**: Protection against brute force attacks using the limiters_middleware and easy integration with fail2ban
+- **Easy configuration**: Extensive and flexible single file configuration in TOML format ([see my own here](/examples/config.toml))
 
 ## Development Status
 
