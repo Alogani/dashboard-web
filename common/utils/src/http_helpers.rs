@@ -32,8 +32,18 @@ pub fn remove_cookie(cookies: &Cookies, cookie: &Option<Cookie>) {
     let cookie = if let Some(cookie) = cookie {
         cookie
     } else {
+        tracing::debug!("No cookie to remove");
         return;
     };
+    tracing::trace!(
+        "Removing cookie: {:?}. Path: {:?}. HttpOnly: {:?}. Secure: {:?}. Domain: {:?}. Expires: {:?}.",
+        cookie.name(),
+        cookie.path(),
+        cookie.http_only(),
+        cookie.secure(),
+        cookie.domain(),
+        cookie.expires(),
+    );
     let new_cookie = Cookie::build((cookie.name().to_string(), ""))
         .path(cookie.path().map(String::from).unwrap_or("/".to_string())) // Use the original path if available
         .http_only(cookie.http_only().unwrap_or(true));
