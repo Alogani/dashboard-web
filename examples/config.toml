@@ -5,6 +5,7 @@
 # Example of a full configuration file close to what I currently use but tweaked for debugging
 
 log_level = "trace"
+log_file = "/tmp/dashboard-web.log"
 cookie_domain = ""
 secure_cookies = false
 cookie_duration = 24

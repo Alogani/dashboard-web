@@ -15,11 +15,25 @@ depend() {
 }
 
 start_pre() {
-    checkpath -f -m 0644 -o root:root "$output_log"
     checkpath -d -m 0755 -o root:root /etc/dashboard-web
     
     if [ ! -f /etc/dashboard-web/config.toml ]; then
         eerror "Config file not found at /etc/dashboard-web/config.toml"
         return 1
+    fi
+}
+
+reload() {
+    ebegin "Reloading ${RC_SVCNAME} configuration"
+    if [ -f "${pidfile}" ]; then
+        local pid=$(cat "${pidfile}")
+        if [ -n "${pid}" ] && kill -0 ${pid} 2>/dev/null; then
+            kill -HUP ${pid}
+            eend $? "Failed to reload ${RC_SVCNAME}"
+        else
+            eend 1 "Process ${pid} not running"
+        fi
+    else
+        eend 1 "Pidfile ${pidfile} not found"
     fi
 }

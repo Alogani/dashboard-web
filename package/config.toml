@@ -3,6 +3,7 @@
 # If you changed only the passwords, you cann send SIGHUP to reload the users and passwords without restarting
 
 log_level = "info"
+log_file = "/var/log/dashboard-web.log"
 cookie_domain = "nginx.lan"
 secure_cookies = true
 cookie_duration = 24 # in hours

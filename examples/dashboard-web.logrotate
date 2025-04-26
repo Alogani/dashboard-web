@@ -1,0 +1,13 @@
+/var/log/dashboard-web.log {
+    daily
+    rotate 7
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0644 root root
+    sharedscripts
+    postrotate
+        /etc/init.d/dashboard-web reload
+    endscript
+}

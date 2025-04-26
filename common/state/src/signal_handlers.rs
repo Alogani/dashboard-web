@@ -1,4 +1,4 @@
-use state::AppState;
+use crate::AppState;
 use tokio::signal::unix::{SignalKind, signal};
 
 pub fn spawn_sighup_watcher(app_state: AppState) {
@@ -7,11 +7,11 @@ pub fn spawn_sighup_watcher(app_state: AppState) {
     tokio::spawn(async move {
         loop {
             sighup.recv().await;
-            println!("Received SIGHUP, reloading configuration...");
-            if let Err(e) = app_state.reload_user_config().await {
-                eprintln!("Error reloading configuration: {}", e);
+            tracing::info!("Received SIGHUP, reloading configuration...");
+            if let Err(e) = app_state.reload_all_config().await {
+                tracing::error!("Error reloading configuration: {}", e);
             } else {
-                println!("Configuration reloaded successfully");
+                tracing::info!("Configuration reloaded successfully");
             }
         }
     });

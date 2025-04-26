@@ -3,7 +3,7 @@ mod user_config;
 use access_check::access_rules_deserialize;
 pub use user_config::*;
 mod log_level;
-use log_level::LogLevel;
+pub use log_level::LogLevel;
 mod access_check;
 
 use admin_config::AdminConsole;
@@ -23,6 +23,7 @@ pub struct AppConfig {
     server_port: u16,
     static_folder: PathBuf,
     log_level: LogLevel,
+    log_file: Option<PathBuf>,
     cookie_domain: String,
     users_db: PathBuf,
     secure_cookies: bool,
@@ -86,6 +87,10 @@ impl AppConfig {
 
     pub fn get_log_level(&self) -> LogLevel {
         self.log_level
+    }
+
+    pub fn get_log_file(&self) -> &Option<PathBuf> {
+        &self.log_file
     }
 
     pub fn get_static_folder(&self) -> &PathBuf {
