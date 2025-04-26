@@ -47,5 +47,6 @@ This project is available for non-commercial use only. For commercial licensing 
 
 ![image](https://github.com/user-attachments/assets/506f054b-a85b-4757-980e-177715c803a6)
 
-![image](https://github.com/user-attachments/assets/e673d98e-341e-4885-b960-cbf2ec351038)
+![image](https://github.com/user-attachments/assets/dd20b658-4621-4fb3-8073-57f5b43467c9)
+
 
