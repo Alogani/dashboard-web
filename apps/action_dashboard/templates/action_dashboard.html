@@ -1,34 +1,27 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panels</title>
-    <link rel="stylesheet" href="/static/css/styles.css">
-    <link rel="stylesheet" href="/static/css/admin-panels.css">
-</head>
-<body>
-    <h1>Admin Dashboard</h1>
-    {% for (_, panel_info) in console.panels.iter() %}
-    <div class="panel">
-        <div class="panel-header" onclick="togglePanel(this)">{{ panel_info.pretty_name }}</div>
-        <div class="panel-content">
-            <div class="command-buttons">
-                {% for cmd_id in panel_info.actions.iter() %}
-                {% let cmd_info = console.actions.get(cmd_id).unwrap() %}
-                <a href="/action_dashboard/cmd/{{ cmd_info.url_name }}" class="command-button">{{ cmd_info.pretty_name }}</a>
-                {% endfor %}
-            </div>
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+{% for (_, panel_info) in console.panels.iter() %}
+<div class="panel">
+    <div class="panel-header" onclick="togglePanel(this)">{{ panel_info.pretty_name }}</div>
+    <div class="panel-content">
+        <div class="command-buttons">
+            {% for cmd_id in panel_info.actions.iter() %}
+            {% let cmd_info = console.actions.get(cmd_id).unwrap() %}
+            <a href="/action_dashboard/cmd/{{ cmd_info.url_name }}" class="command-button">{{ cmd_info.pretty_name }}</a>
+            {% endfor %}
         </div>
     </div>
-    {% endfor %}
+</div>
+{% endfor %}
 
-    <div id="result"></div>
-    <a href="/" class="back-link">← Back to Main Dashboard</a>
-    <script>
-        function togglePanel(header) {
-            header.nextElementSibling.classList.toggle('active');
-        }
-    </script>
-</body>
-</html>
+<div id="result"></div>
+<a href="/" class="back-link">← Back to Main Dashboard</a>
+<script>
+    function togglePanel(header) {
+        header.nextElementSibling.classList.toggle('active');
+    }
+</script>
+{% endblock %}
