@@ -9,4 +9,5 @@ app_errors.workspace = true
 serde.workspace = true
 time.workspace = true
 tower-cookies.workspace = true
+tracing.workspace = true
 url.workspace = true

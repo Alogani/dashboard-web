@@ -43,6 +43,7 @@ pub fn remove_cookie(cookies: &Cookies, cookie: &Option<Cookie>) {
         new_cookie
     };
     let new_cookie = if let Some(domain) = cookie.domain() {
+        tracing::trace!("Removing cookie with domain: {}", domain);
         new_cookie.domain(domain.to_string())
     } else {
         new_cookie
