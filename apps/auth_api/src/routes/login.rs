@@ -106,7 +106,11 @@ pub async fn login(
             };
         }
     } else {
-        tracing::debug!("Invalid username or password for {}", form.username);
+        tracing::warn!(
+            "Authentication failed: Invalid username or password for user '{}' from IP {}",
+            form.username,
+            ip
+        );
 
         let template = LoginTemplate {
             error_message: "Invalid username or password",
