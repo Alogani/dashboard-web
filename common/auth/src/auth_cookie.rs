@@ -1,9 +1,9 @@
 use app_errors::AppError;
 use state::AppState;
 use time::{Duration, OffsetDateTime};
-use tower_cookies::{Cookie, Cookies};
+use tower_cookies::{Cookie, Cookies, cookie::CookieBuilder};
 
-const COOKIE_NAME: &str = "AuthUser";
+pub const COOKIE_NAME: &str = "AuthUser";
 
 pub async fn identify_user_with_cookie(
     cookies: &Cookies,
@@ -16,6 +16,10 @@ pub async fn identify_user_with_cookie(
     };
 
     let public_hash = cookie.value().to_string();
+    if public_hash.is_empty() {
+        tracing::trace!("Empty cookie value for authentication");
+        return Ok(None);
+    };
 
     state
         .get_users_config()
@@ -39,28 +43,31 @@ pub async fn set_auth_cookie(
                 "No username found.".to_string(),
             ))?;
 
-    let expiry = OffsetDateTime::now_utc() + Duration::hours(state.get_cookie_duration() as i64);
-
-    let cookie = Cookie::build((COOKIE_NAME, public_hash))
-        .path("/")
-        .expires(expiry)
-        .secure(state.use_secure_cookies())
-        .http_only(true);
-    let domain = state.get_cookie_domain().to_string();
-    let cookie = if !domain.is_empty() {
-        cookie.domain(domain)
-    } else {
-        cookie
-    };
     tracing::trace!("Setting authentication cookie for user: {}", username);
 
-    cookies.add(cookie.into());
+    let expiry = OffsetDateTime::now_utc() + Duration::hours(state.get_cookie_duration() as i64);
+    cookies.add(build_cookie(public_hash, state).expires(expiry).into());
 
     Ok(())
 }
 
-pub fn clear_auth_cookie(cookies: &Cookies) {
-    let mut cookie = Cookie::new(COOKIE_NAME, "");
-    cookie.set_path("/");
-    cookies.remove(cookie);
+pub fn remove_auth_cookie(cookies: &Cookies, state: &AppState) {
+    // Set in past to be sure the cookie is correctly removed
+    let expiry = OffsetDateTime::now_utc() - Duration::hours(24);
+    cookies.remove(build_cookie("".to_string(), state).expires(expiry).into());
+    tracing::trace!("Cleared authentication cookie");
+}
+
+fn build_cookie<'a>(value: String, state: &AppState) -> CookieBuilder<'a> {
+    let cookie = Cookie::build((COOKIE_NAME, value))
+        .path("/")
+        .secure(state.use_secure_cookies())
+        .http_only(true);
+
+    let domain = state.get_cookie_domain().to_string();
+    if !domain.is_empty() {
+        cookie.domain(domain)
+    } else {
+        cookie
+    }
 }

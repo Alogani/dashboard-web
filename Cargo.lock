@@ -188,6 +188,7 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
+ "utils",
 ]
 
 [[package]]
@@ -495,7 +496,7 @@ dependencies = [
 
 [[package]]
 name = "dashboard-web"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "action_dashboard",
  "app_errors",
@@ -1772,6 +1773,9 @@ version = "0.0.0"
 dependencies = [
  "app_errors",
  "serde",
+ "time",
+ "tower-cookies",
+ "tracing",
  "url",
 ]
 

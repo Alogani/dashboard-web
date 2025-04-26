@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use state::AppState;
-use tower_cookies::{Cookie, Cookies};
+use tower_cookies::{Cookie, Cookies, cookie::CookieBuilder};
 
 const COOKIE_NAME: &str = "AuthRedirect";
 
@@ -25,28 +25,17 @@ pub fn set_redirect_cookie(
         "{}".to_string()
     });
 
-    let cookie = Cookie::build((COOKIE_NAME, serialized))
-        .path("/")
-        .http_only(true)
-        .secure(state.use_secure_cookies())
-        .same_site(tower_cookies::cookie::SameSite::Lax);
-    let domain = state.get_cookie_domain().to_string();
-    let cookie = if !domain.is_empty() {
-        cookie.domain(domain)
-    } else {
-        cookie
-    };
-
-    // The cookie will be a session cookie (expires when the browser is closed)
-    // by not setting an expiration time
-    cookies.add(cookie.into());
+    cookies.add(build_cookie(serialized, state).into());
 }
 
-pub fn consume_redirect_cookie(cookies: &Cookies) -> Option<(Option<String>, String)> {
+pub fn consume_redirect_cookie(
+    cookies: &Cookies,
+    state: &AppState,
+) -> Option<(Option<String>, String)> {
     cookies.get(COOKIE_NAME).and_then(|cookie| {
         let serialized_value = cookie.value();
-        // Remove the cookie after reading
-        cookies.remove(Cookie::new(COOKIE_NAME, ""));
+        cookies.remove(build_cookie("".to_string(), state).into());
+        tracing::trace!("Cleared redirect cookie");
 
         match serde_json::from_str::<RedirectData>(serialized_value) {
             Ok(redirect_data) => Some((redirect_data.subdomain, redirect_data.path)),
@@ -56,4 +45,20 @@ pub fn consume_redirect_cookie(cookies: &Cookies) -> Option<(Option<String>, Str
             }
         }
     })
+}
+
+fn build_cookie<'a>(value: String, state: &AppState) -> CookieBuilder<'a> {
+    // The cookie will be a session cookie (expires when the browser is closed)
+    // by not setting an expiration time
+    let cookie = Cookie::build((COOKIE_NAME, value))
+        .path("/")
+        .http_only(true)
+        .secure(state.use_secure_cookies())
+        .same_site(tower_cookies::cookie::SameSite::Lax);
+    let domain = state.get_cookie_domain().to_string();
+    if !domain.is_empty() {
+        cookie.domain(domain)
+    } else {
+        cookie
+    }
 }
