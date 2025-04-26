@@ -48,5 +48,5 @@ pub fn remove_cookie(cookies: &Cookies, cookie: &Option<Cookie>) {
         new_cookie
     };
     let new_cookie = new_cookie.expires(time::OffsetDateTime::now_utc() - time::Duration::days(1));
-    cookies.remove(new_cookie.into());
+    cookies.add(new_cookie.into());
 }
