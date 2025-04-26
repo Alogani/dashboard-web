@@ -15,14 +15,16 @@ users_db = "examples/users_db.txt"
 
 [access_rules]
 # Access rules correspond to a pair of PATH = [aurhorized_users]
-# By default routes are not allowed except explictly allowed.
-# Most precise rules (aka longer urls) take precedence (eg: "/static/css" is a stronger rule than "/static")
-# Special path /auth/ is always authorized
+
 
 ## Concerning path match
 # "/static/myfolder" will match url "/static/myfolder" and any url beggining by "/static/myfolder/" (eg: "/static/myfolder_2" won't be match)
 # "/static/myfolder/" will match url any url under that location but not "/static/css" in itself
 # "/static/myfolder*" will match url any url beginnning by "/static/myfolder", (eg: "/static/myfolder_2", "/static/myfolder/myfile")
+## Notes concerning path match:
+# By default routes are not allowed except explictly allowed.
+# Most precise rules (aka longer urls) take precedence (eg: "/static/css" is a stronger rule than "/static" or "/static/*")
+# Special path /auth/ is always authorized
 
 ## Concerning users
 # ["*"] means that no login is done, so the path is accessible without a login requirement
