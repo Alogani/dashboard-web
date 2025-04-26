@@ -1,35 +1,40 @@
-#users_file = "/etc/dashboard-web/users.txt"
-users_file = "package/users.txt"
-log_level = "trace"
-cookie_domain = ""
-secure_cookies = false
-static_folder = "static"
+users_file = "/etc/dashboard-web/users.txt"
+log_level = "info"
+cookie_domain = "nginx.lan"
+secure_cookies = true
+static_folder = "/www/static"
 
 [access_rules]
 "/" = ["*"]
 "/static/css/" = ["*"]
-"/action_dashboard/cmd/router_poweroff" = ["admin"]
-"incus@/" = ["desktop"]
-"forgejo@/" = ["desktop", "laptop"]
+"/action_dashboard/cmd/admin_*" = ["desktop", "laptop"]
+"/action_dashboard/cmd/router_poweroff" = ["desktop", "laptop"]
 "vaultwarden@/" = ["*"]
 "vaultwarden@/admin" = ["desktop"]
+"forgejo@/" = ["desktop", "laptop"]
+"sftpgo@/" = ["desktop"]
+"incus@/" = ["desktop"]
 
 [external_links]
-"Incus" = "https://incus.nginx.lan"
-"Forgejo" = "https://forgejo.nginx.lan"
 "Vaultwarden" = "https://vaultwarden.nginx.lan"
+"Forgejo" = "https://forgejo.nginx.lan"
+"Sftpgo" = "https://sftpgo.nginx.lan"
+"Incus" = "https://incus.nginx.lan"
 
 [admin_commands]
 [admin_commands.hosts]
 local = ""
-router = "root@satellite.lan"
+server = "alogani@server.lan"
+router = "root@router.lan"
 
 [admin_commands.panels]
 main_panel = "Main Panel"
 router_panel = "Router Panel"
 
 [admin_commands.commands]
-update_dashboard = { name = "Update Dashboard", host = "local", panel = "main_panel", command = "/usr/local/bin/update_dashboard.sh" }
-stats = { name = "Router Statistics", host = "router", panel = "router_panel", command = "stats" }
+admin_stats = { name = "Server Statistics", host = "server", panel = "main_panel", command = "stats" }
+admin_show_task_report = { name = "Show Tasks Reports", host = "server", panel = "main_panel", command = "show_task_report" }
+admin_clear_task_report = { name = "Clear Tasks Reports", host = "server", panel = "main_panel", command = "clear_task_report" }
+router_stats = { name = "Router Statistics", host = "router", panel = "router_panel", command = "stats" }
 router_reboot = { name = "Reboot Router", host = "router", panel = "router_panel", command = "reboot" }
 router_poweroff = { name = "Power Off Router", host = "router", panel = "router_panel", command = "poweroff" }

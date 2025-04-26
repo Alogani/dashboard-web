@@ -1,0 +1,30 @@
+[ req ]
+default_bits            = 2048
+default_md              = sha256
+distinguished_name      = req_dn
+req_extensions          = req_ext
+x509_extensions         = v3_ca
+prompt                  = no
+
+[ req_ext ]
+subjectAltName          = @alt_names
+
+[ req_dn ]
+countryName             = YOUR_COUNTRY
+stateOrProvinceName     = YOUR_PROVINCE
+localityName            = YOUR_LOCALITY
+organizationName        = YOUR_ORG
+organizationalUnitName  = YOUR_UNIT
+commonName              = nginx.lan
+
+[ alt_names ]
+DNS.0                   = nginx.lan
+DNS.1                   = *.nginx.lan
+DNS.2                   = nginx.incus
+
+[ v3_ca ]
+basicConstraints        = critical, CA:TRUE
+keyUsage                = critical, keyCertSign, cRLSign, digitalSignature, keyEncipherment
+subjectKeyIdentifier    = hash
+authorityKeyIdentifier  = keyid:always, issuer
+subjectAltName          = @alt_names
