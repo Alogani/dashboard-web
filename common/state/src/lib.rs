@@ -12,7 +12,17 @@ pub struct AppState {
 
 impl AppState {
     pub fn new(app_config: AppConfig) -> Self {
-        let users_config = UsersConfig::from_file(app_config.get_users_file()).unwrap();
+        let users_config = match UsersConfig::from_file(app_config.get_usersdb_path()) {
+            Ok(config) => config,
+            Err(err) => {
+                tracing::warn!(
+                    "Failed to load users configuration: {}. Using empty configuration. \
+                    It is recommended to use the command line CLI to create and manage users_db file.",
+                    err
+                );
+                UsersConfig::new()
+            }
+        };
         AppState {
             app_config: Arc::new(app_config),
             user_config: Arc::new(RwLock::new(users_config)),
@@ -21,7 +31,7 @@ impl AppState {
 
     pub async fn reload_user_config(&self) -> Result<(), AppError> {
         let mut user_config = self.user_config.write().await;
-        *user_config = UsersConfig::from_file(self.get_users_file())?;
+        *user_config = UsersConfig::from_file(self.get_usersdb_path())?;
         Ok(())
     }
 

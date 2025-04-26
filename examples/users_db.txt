@@ -1,0 +1,1 @@
+desktop = "$2b$12$pePwPDZEKsbtZtagRhKdF.kBWqBvY49WQTU/6MB5Jfad6wd7k7wh2"
