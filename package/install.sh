@@ -49,7 +49,7 @@ fi
 
 # Install init script
 echo "Installing OpenRC init script..."
-cp "$SCRIPT_DIR/dashboard-web-init-script" "$INIT_SCRIPT"
+cp "$SCRIPT_DIR/openrc-init" "$INIT_SCRIPT"
 chmod +x "$INIT_SCRIPT"
 
 echo "Installation complete!"

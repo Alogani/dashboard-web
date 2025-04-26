@@ -26,6 +26,7 @@ pub struct AppConfig {
     cookie_domain: String,
     users_file: String,
     secure_cookies: bool,
+    cookie_duration: u32,
     #[serde(deserialize_with = "access_rules_deserialize")]
     access_rules: HashMap<String, Vec<(String, Vec<String>)>>,
     #[serde(with = "string_tuple_vec")]
@@ -58,6 +59,10 @@ impl AppConfig {
 
     pub fn get_cookie_domain(&self) -> &str {
         &self.cookie_domain
+    }
+
+    pub fn get_cookie_duration(&self) -> u32 {
+        self.cookie_duration
     }
 
     pub fn get_external_links(&self) -> &Vec<(String, String)> {

@@ -1,7 +1,12 @@
+# This configuration file is read at startup
+# In case of change, you must restart the application, this will expire all authentication cookie, making a new login required
+# If you changed only the passwords, you cann send SIGHUP to reload the users and passwords without restarting
+
 users_file = "/etc/dashboard-web/users.txt"
 log_level = "info"
 cookie_domain = "nginx.lan"
 secure_cookies = true
+cookie_duration = 24 # in hours
 static_folder = "/www/static"
 
 [access_rules]

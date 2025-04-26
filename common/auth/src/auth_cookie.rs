@@ -4,7 +4,6 @@ use time::{Duration, OffsetDateTime};
 use tower_cookies::{Cookie, Cookies};
 
 const COOKIE_NAME: &str = "AuthUser";
-const COOKIE_DURATION: Duration = Duration::hours(24);
 
 pub async fn identify_user_with_cookie(
     cookies: &Cookies,
@@ -40,7 +39,7 @@ pub async fn set_auth_cookie(
                 "No username found.".to_string(),
             ))?;
 
-    let expiry = OffsetDateTime::now_utc() + COOKIE_DURATION;
+    let expiry = OffsetDateTime::now_utc() + Duration::hours(state.get_cookie_duration() as i64);
 
     let cookie = Cookie::build((COOKIE_NAME, public_hash))
         .path("/")

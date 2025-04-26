@@ -19,6 +19,16 @@ This project is currently in active development and is primarily maintained for 
 - Some portions of the codebase were initially generated with AI assistance and will require further refinement
 - Not recommended for production use without thorough review and testing
 
+## Deployment
+
+The `package` directory contains several utilities to simplify deployment:
+- Nginx configuration for reverse proxy with SSL
+- Fail2ban integration
+- Example configuration file
+- Simple installation script (`install.sh`) for alpine linux
+- openrc file for using dashboard-web as a service in alpine linux
+
+
 ## License
 
 Copyright © Alogani. All rights reserved.
