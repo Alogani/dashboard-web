@@ -18,11 +18,6 @@ start_pre() {
     checkpath -f -m 0644 -o root:root "$output_log"
     checkpath -d -m 0755 -o root:root /etc/dashboard-web
     
-    if [ ! -f /etc/dashboard-web/users.txt ]; then
-        eerror "Users file not found at /etc/dashboard-web/users.txt"
-        return 1
-    fi
-    
     if [ ! -f /etc/dashboard-web/config.toml ]; then
         eerror "Config file not found at /etc/dashboard-web/config.toml"
         return 1
