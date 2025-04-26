@@ -2,9 +2,12 @@
 
 name="dashboard-web"
 description="Web Dashboard"
+extra_started_commands="reload"
+
 command="/usr/local/bin/dashboard-web"
 command_args="--config /etc/dashboard-web/config.toml"
 command_background="yes"
+
 pidfile="/run/${RC_SVCNAME}.pid"
 output_log="/var/log/${RC_SVCNAME}.log"
 error_log="/var/log/${RC_SVCNAME}.log"
