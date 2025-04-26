@@ -1,8 +1,7 @@
 use app_errors::AppError;
 use state::AppState;
 use time::{Duration, OffsetDateTime};
-use tower_cookies::{Cookie, Cookies};
-use utils::http_helpers::remove_cookie;
+use tower_cookies::{Cookie, Cookies, cookie::CookieBuilder};
 
 pub const COOKIE_NAME: &str = "AuthUser";
 
@@ -44,28 +43,31 @@ pub async fn set_auth_cookie(
                 "No username found.".to_string(),
             ))?;
 
+    tracing::trace!("Setting authentication cookie for user: {}", username);
+
+    cookies.add(build_cookie(public_hash, state).into());
+
+    Ok(())
+}
+
+pub fn remove_auth_cookie(cookies: &Cookies, state: &AppState) {
+    cookies.add(build_cookie("".to_string(), state).into());
+    tracing::trace!("Cleared authentication cookie");
+}
+
+fn build_cookie<'a>(value: String, state: &AppState) -> CookieBuilder<'a> {
     let expiry = OffsetDateTime::now_utc() + Duration::hours(state.get_cookie_duration() as i64);
 
-    let cookie = Cookie::build((COOKIE_NAME, public_hash))
+    let cookie = Cookie::build((COOKIE_NAME, value))
         .path("/")
         .secure(state.use_secure_cookies())
         .http_only(true)
         .expires(expiry);
 
     let domain = state.get_cookie_domain().to_string();
-    let cookie = if !domain.is_empty() {
+    if !domain.is_empty() {
         cookie.domain(domain)
     } else {
         cookie
-    };
-    tracing::trace!("Setting authentication cookie for user: {}", username);
-
-    cookies.add(cookie.into());
-
-    Ok(())
-}
-
-pub fn remove_auth_cookie(cookies: &Cookies) {
-    remove_cookie(&cookies, &cookies.get(COOKIE_NAME));
-    tracing::trace!("Cleared authentication cookie");
+    }
 }

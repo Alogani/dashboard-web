@@ -64,7 +64,7 @@ pub async fn login(
 
         // Get the redirect URL or path
         let (subdomain, route) =
-            consume_redirect_cookie(&cookies).unwrap_or_else(|| (None, "/".to_string()));
+            consume_redirect_cookie(&cookies, &state).unwrap_or_else(|| (None, "/".to_string()));
 
         if state.is_access_allowed(
             subdomain.as_ref().map(|s| s.as_str()).clone(),
