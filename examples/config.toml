@@ -4,6 +4,7 @@
 
 # Example of a full configuration file close to what I currently use but tweaked for debugging
 
+# Following section is set for debbuging, rather use https://github.com/Alogani/dashboard-web/blob/main/package/config.toml
 log_level = "trace"
 log_file = "/tmp/dashboard-web.log"
 cookie_domain = ""
