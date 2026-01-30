@@ -23,8 +23,3 @@ macro_rules! with_nocache {
         resp
     }};
 }
-
-#[macro_export]
-macro_rules! with_nocache_ok {
-    ($res:expr) => {{ Ok($crate::with_nocache!($res)) }};
-}

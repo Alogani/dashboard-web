@@ -10,6 +10,7 @@ use axum::{
 use limiters_middleware::RateLimiter;
 use state::AppState;
 use tower_cookies::Cookies;
+use utils::with_nocache;
 
 use crate::templates::{LoginError, LoginTemplate};
 use auth::redirect_cookie::consume_redirect_cookie;
@@ -114,16 +115,7 @@ pub async fn login(
                 route
             };
 
-            let mut res = Redirect::to(&redirect_url).into_response();
-            res.headers_mut().insert(
-                CACHE_CONTROL,
-                HeaderValue::from_static("no-store, no-cache, must-revalidate"),
-            );
-            res.headers_mut()
-                .insert(PRAGMA, HeaderValue::from_static("no-cache"));
-            res.headers_mut()
-                .insert(VARY, HeaderValue::from_static("Cookie"));
-            return Ok(res);
+            return Ok(with_nocache!(Redirect::to(&redirect_url)));
         } else {
             tracing::warn!(
                 "User {} is not allowed to access route: {} at subdomain: {:?}",
@@ -136,16 +128,7 @@ pub async fn login(
                 welcome_message: String::new(),
             };
             return match template.render() {
-                Ok(html) => {
-                    let mut res = (StatusCode::FORBIDDEN, Html(html)).into_response();
-                    res.headers_mut().insert(
-                        CACHE_CONTROL,
-                        HeaderValue::from_static("no-store, no-cache, must-revalidate"),
-                    );
-                    res.headers_mut()
-                        .insert(VARY, HeaderValue::from_static("Cookie"));
-                    Ok(res)
-                }
+                Ok(html) => Ok(with_nocache!((StatusCode::FORBIDDEN, Html(html)))),
                 Err(err) => {
                     tracing::error!("Template error: {}", err);
                     Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response())
@@ -165,16 +148,8 @@ pub async fn login(
         };
 
         match template.render() {
-            Ok(html) => {
-                let mut res = (StatusCode::UNAUTHORIZED, Html(html)).into_response();
-                res.headers_mut().insert(
-                    CACHE_CONTROL,
-                    HeaderValue::from_static("no-store, no-cache, must-revalidate"),
-                );
-                res.headers_mut()
-                    .insert(VARY, HeaderValue::from_static("Cookie"));
-                Ok(res)
-            }
+            Ok(html) => Ok(with_nocache!((StatusCode::UNAUTHORIZED, Html(html)))),
+
             Err(err) => {
                 tracing::error!("Template error: {}", err);
                 Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response())

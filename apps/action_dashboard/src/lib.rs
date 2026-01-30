@@ -14,6 +14,7 @@ mod admin_executor;
 mod templates;
 
 use templates::AdminConsoleView;
+use utils::with_nocache;
 
 pub fn router(State(state): State<AppState>) -> Router<AppState> {
     let rate_limiter = RateLimiter::new(Some(500), None);
@@ -26,16 +27,7 @@ pub fn router(State(state): State<AppState>) -> Router<AppState> {
                     console: state_clone.get_admin_commands(),
                 };
                 match template.render() {
-                    Ok(html) => {
-                        let mut res = Html(html).into_response();
-                        res.headers_mut().insert(
-                            http::header::CACHE_CONTROL,
-                            http::HeaderValue::from_static("no-store, no-cache, must-revalidate"),
-                        );
-                        res.headers_mut()
-                            .insert(http::header::VARY, http::HeaderValue::from_static("Cookie"));
-                        res
-                    }
+                    Ok(html) => with_nocache!(Html(html)),
                     Err(err) => {
                         tracing::error!("Template error: {}", err);
                         StatusCode::INTERNAL_SERVER_ERROR.into_response()
