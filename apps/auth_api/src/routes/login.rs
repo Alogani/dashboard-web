@@ -11,6 +11,14 @@ use limiters_middleware::RateLimiter;
 use state::AppState;
 use tower_cookies::Cookies;
 
+use crate::templates::{LoginTemplate, LoginError};
+use auth::set_auth_cookie;
+use auth::redirect_cookie::consume_redirect_cookie;
+use app_errors::AppError;
+use std::net::SocketAddr;
+use http::header::{CACHE_CONTROL, PRAGMA, VARY};
+use http::HeaderValue;
+
 use crate::templates::{LoginError, LoginTemplate};
 use auth::{consume_redirect_cookie, set_auth_cookie};
 
@@ -111,7 +119,15 @@ pub async fn login(
                 route
             };
 
-            return Ok(Redirect::to(&redirect_url).into_response());
+            let mut res = Redirect::to(&redirect_url).into_response();
+            res.headers_mut().insert(
+                CACHE_CONTROL,
+                HeaderValue::from_static("no-store, no-cache, must-revalidate"),
+            );
+            res.headers_mut()
+                .insert(PRAGMA, HeaderValue::from_static("no-cache"));
+            res.headers_mut().insert(VARY, HeaderValue::from_static("Cookie"));
+            return Ok(res);
         } else {
             tracing::warn!(
                 "User {} is not allowed to access route: {} at subdomain: {:?}",
@@ -124,7 +140,15 @@ pub async fn login(
                 welcome_message: String::new(),
             };
             return match template.render() {
-                Ok(html) => Ok((StatusCode::FORBIDDEN, Html(html)).into_response()),
+                Ok(html) => {
+                    let mut res = (StatusCode::FORBIDDEN, Html(html)).into_response();
+                    res.headers_mut().insert(
+                        CACHE_CONTROL,
+                        HeaderValue::from_static("no-store, no-cache, must-revalidate"),
+                    );
+                    res.headers_mut().insert(VARY, HeaderValue::from_static("Cookie"));
+                    Ok(res)
+                }
                 Err(err) => {
                     tracing::error!("Template error: {}", err);
                     Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response())
@@ -144,7 +168,15 @@ pub async fn login(
         };
 
         match template.render() {
-            Ok(html) => Ok((StatusCode::UNAUTHORIZED, Html(html)).into_response()),
+            Ok(html) => {
+                let mut res = (StatusCode::UNAUTHORIZED, Html(html)).into_response();
+                res.headers_mut().insert(
+                    CACHE_CONTROL,
+                    HeaderValue::from_static("no-store, no-cache, must-revalidate"),
+                );
+                res.headers_mut().insert(VARY, HeaderValue::from_static("Cookie"));
+                Ok(res)
+            }
             Err(err) => {
                 tracing::error!("Template error: {}", err);
                 Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response())
