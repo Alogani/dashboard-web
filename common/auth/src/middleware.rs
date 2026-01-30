@@ -2,14 +2,13 @@ use axum::{
     body::Body,
     http::Request,
     middleware::Next,
-    response::{IntoResponse, Redirect, Response},
+    response::{Redirect, Response},
 };
 use state::AppState;
 use tower_cookies::Cookies;
+use utils::with_nocache;
 
 use crate::{AUTH_ROUTES, LOGIN_PATH, auth_cookie::*, redirect_cookie::set_redirect_cookie};
-use http::header::{CACHE_CONTROL, PRAGMA, VARY};
-use http::HeaderValue;
 
 // Middleware to check if a user is authenticated and has access to a route
 pub async fn auth_middleware(
@@ -53,16 +52,5 @@ pub async fn auth_middleware(
     tracing::debug!("Redirecting to login page");
     set_redirect_cookie(&cookies, &state, (None, path));
 
-    // Build redirect response and explicitly prevent it from being cached by
-    // browsers or intermediate proxies. Also set Vary: Cookie so caches
-    // know the response depends on cookies.
-    let mut res = Redirect::to(LOGIN_PATH).into_response();
-    res.headers_mut().insert(
-        CACHE_CONTROL,
-        HeaderValue::from_static("no-store, no-cache, must-revalidate"),
-    );
-    res.headers_mut()
-        .insert(PRAGMA, HeaderValue::from_static("no-cache"));
-    res.headers_mut().insert(VARY, HeaderValue::from_static("Cookie"));
-    res
+    with_nocache!(Redirect::to(LOGIN_PATH))
 }

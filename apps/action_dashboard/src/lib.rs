@@ -32,10 +32,8 @@ pub fn router(State(state): State<AppState>) -> Router<AppState> {
                             http::header::CACHE_CONTROL,
                             http::HeaderValue::from_static("no-store, no-cache, must-revalidate"),
                         );
-                        res.headers_mut().insert(
-                            http::header::VARY,
-                            http::HeaderValue::from_static("Cookie"),
-                        );
+                        res.headers_mut()
+                            .insert(http::header::VARY, http::HeaderValue::from_static("Cookie"));
                         res
                     }
                     Err(err) => {

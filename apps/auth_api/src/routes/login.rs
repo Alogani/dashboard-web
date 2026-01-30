@@ -11,16 +11,11 @@ use limiters_middleware::RateLimiter;
 use state::AppState;
 use tower_cookies::Cookies;
 
-use crate::templates::{LoginTemplate, LoginError};
-use auth::set_auth_cookie;
-use auth::redirect_cookie::consume_redirect_cookie;
-use app_errors::AppError;
-use std::net::SocketAddr;
-use http::header::{CACHE_CONTROL, PRAGMA, VARY};
-use http::HeaderValue;
-
 use crate::templates::{LoginError, LoginTemplate};
-use auth::{consume_redirect_cookie, set_auth_cookie};
+use auth::redirect_cookie::consume_redirect_cookie;
+use auth::set_auth_cookie;
+use http::HeaderValue;
+use http::header::{CACHE_CONTROL, PRAGMA, VARY};
 
 use serde::Deserialize;
 
@@ -58,14 +53,14 @@ fn get_real_ip(headers: &HeaderMap, socket_addr: &SocketAddr) -> String {
             }
         }
     }
-    
+
     // Try X-Real-IP as fallback
     if let Some(real_ip) = headers.get("X-Real-IP") {
         if let Ok(ip_str) = real_ip.to_str() {
             return ip_str.to_string();
         }
     }
-    
+
     // Fallback to socket address if headers aren't available
     socket_addr.ip().to_string()
 }
@@ -81,7 +76,7 @@ pub async fn login(
 
     // Get the real client IP
     let ip = get_real_ip(&headers, &addr);
-    
+
     // Rate limit the login attempts
     if let Some(response) = check_rate_limit(&rate_limiter, &ip) {
         return Ok(response);
@@ -126,7 +121,8 @@ pub async fn login(
             );
             res.headers_mut()
                 .insert(PRAGMA, HeaderValue::from_static("no-cache"));
-            res.headers_mut().insert(VARY, HeaderValue::from_static("Cookie"));
+            res.headers_mut()
+                .insert(VARY, HeaderValue::from_static("Cookie"));
             return Ok(res);
         } else {
             tracing::warn!(
@@ -146,7 +142,8 @@ pub async fn login(
                         CACHE_CONTROL,
                         HeaderValue::from_static("no-store, no-cache, must-revalidate"),
                     );
-                    res.headers_mut().insert(VARY, HeaderValue::from_static("Cookie"));
+                    res.headers_mut()
+                        .insert(VARY, HeaderValue::from_static("Cookie"));
                     Ok(res)
                 }
                 Err(err) => {
@@ -174,7 +171,8 @@ pub async fn login(
                     CACHE_CONTROL,
                     HeaderValue::from_static("no-store, no-cache, must-revalidate"),
                 );
-                res.headers_mut().insert(VARY, HeaderValue::from_static("Cookie"));
+                res.headers_mut()
+                    .insert(VARY, HeaderValue::from_static("Cookie"));
                 Ok(res)
             }
             Err(err) => {
