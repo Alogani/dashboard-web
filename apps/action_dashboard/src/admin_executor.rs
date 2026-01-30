@@ -12,6 +12,8 @@ use std::process::Stdio;
 use tokio::process::Command;
 
 use crate::templates::{ActionResult, AdminConsoleView, ExecutionError};
+use http::header::{CACHE_CONTROL, PRAGMA, VARY};
+use http::HeaderValue;
 
 /// Checks if the request should be rate limited based on IP address
 fn check_rate_limit(rate_limiter: &RateLimiter, ip: &str) -> Option<Response> {
@@ -20,7 +22,15 @@ fn check_rate_limit(rate_limiter: &RateLimiter, ip: &str) -> Option<Response> {
             message: "Too fast. Wait a sec.",
         };
         return match template.render() {
-            Ok(html) => Some(Html(html).into_response()),
+            Ok(html) => {
+                let mut res = Html(html).into_response();
+                res.headers_mut().insert(
+                    CACHE_CONTROL,
+                    HeaderValue::from_static("no-store, no-cache, must-revalidate"),
+                );
+                res.headers_mut().insert(VARY, HeaderValue::from_static("Cookie"));
+                Some(res)
+            }
             Err(err) => {
                 tracing::error!("Template error: {}", err);
                 Some(StatusCode::INTERNAL_SERVER_ERROR.into_response())
@@ -103,7 +113,15 @@ pub async fn execute_admin_action(
             console: admin_cmds,
         };
         return match template.render() {
-            Ok(html) => Html(html).into_response(),
+            Ok(html) => {
+                let mut res = Html(html).into_response();
+                res.headers_mut().insert(
+                    CACHE_CONTROL,
+                    HeaderValue::from_static("no-store, no-cache, must-revalidate"),
+                );
+                res.headers_mut().insert(VARY, HeaderValue::from_static("Cookie"));
+                res
+            }
             Err(err) => {
                 tracing::error!("Template error: {}", err);
                 StatusCode::INTERNAL_SERVER_ERROR.into_response()
@@ -120,7 +138,15 @@ pub async fn execute_admin_action(
                 message: "Invalid command",
             };
             return match template.render() {
-                Ok(html) => Html(html).into_response(),
+                Ok(html) => {
+                    let mut res = Html(html).into_response();
+                    res.headers_mut().insert(
+                        CACHE_CONTROL,
+                        HeaderValue::from_static("no-store, no-cache, must-revalidate"),
+                    );
+                    res.headers_mut().insert(VARY, HeaderValue::from_static("Cookie"));
+                    res
+                }
                 Err(err) => {
                     tracing::error!("Template error: {}", err);
                     StatusCode::INTERNAL_SERVER_ERROR.into_response()
@@ -145,7 +171,15 @@ pub async fn execute_admin_action(
     };
 
     match template.render() {
-        Ok(html) => Html(html).into_response(),
+        Ok(html) => {
+            let mut res = Html(html).into_response();
+            res.headers_mut().insert(
+                CACHE_CONTROL,
+                HeaderValue::from_static("no-store, no-cache, must-revalidate"),
+            );
+            res.headers_mut().insert(VARY, HeaderValue::from_static("Cookie"));
+            res
+        }
         Err(err) => {
             tracing::error!("Template error: {}", err);
             StatusCode::INTERNAL_SERVER_ERROR.into_response()
