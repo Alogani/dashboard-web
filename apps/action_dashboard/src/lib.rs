@@ -26,7 +26,18 @@ pub fn router(State(state): State<AppState>) -> Router<AppState> {
                     console: state_clone.get_admin_commands(),
                 };
                 match template.render() {
-                    Ok(html) => Html(html).into_response(),
+                    Ok(html) => {
+                        let mut res = Html(html).into_response();
+                        res.headers_mut().insert(
+                            http::header::CACHE_CONTROL,
+                            http::HeaderValue::from_static("no-store, no-cache, must-revalidate"),
+                        );
+                        res.headers_mut().insert(
+                            http::header::VARY,
+                            http::HeaderValue::from_static("Cookie"),
+                        );
+                        res
+                    }
                     Err(err) => {
                         tracing::error!("Template error: {}", err);
                         StatusCode::INTERNAL_SERVER_ERROR.into_response()
