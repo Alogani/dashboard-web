@@ -15,8 +15,6 @@ use utils::with_nocache;
 use crate::templates::{LoginError, LoginTemplate};
 use auth::redirect_cookie::consume_redirect_cookie;
 use auth::set_auth_cookie;
-use http::HeaderValue;
-use http::header::{CACHE_CONTROL, PRAGMA, VARY};
 
 use serde::Deserialize;
 
