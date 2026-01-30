@@ -2,10 +2,11 @@ use axum::{
     body::Body,
     http::Request,
     middleware::Next,
-    response::{IntoResponse, Redirect, Response},
+    response::{Redirect, Response},
 };
 use state::AppState;
 use tower_cookies::Cookies;
+use utils::with_nocache;
 
 use crate::{AUTH_ROUTES, LOGIN_PATH, auth_cookie::*, redirect_cookie::set_redirect_cookie};
 
@@ -50,5 +51,6 @@ pub async fn auth_middleware(
     // If not authenticated or not authorized, redirect to login
     tracing::debug!("Redirecting to login page");
     set_redirect_cookie(&cookies, &state, (None, path));
-    Redirect::to(LOGIN_PATH).into_response()
+
+    with_nocache!(Redirect::to(LOGIN_PATH))
 }

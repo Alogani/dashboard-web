@@ -10,6 +10,7 @@ use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::process::Stdio;
 use tokio::process::Command;
+use utils::with_nocache;
 
 use crate::templates::{ActionResult, AdminConsoleView, ExecutionError};
 
@@ -20,7 +21,7 @@ fn check_rate_limit(rate_limiter: &RateLimiter, ip: &str) -> Option<Response> {
             message: "Too fast. Wait a sec.",
         };
         return match template.render() {
-            Ok(html) => Some(Html(html).into_response()),
+            Ok(html) => Some(with_nocache!(Html(html))),
             Err(err) => {
                 tracing::error!("Template error: {}", err);
                 Some(StatusCode::INTERNAL_SERVER_ERROR.into_response())
@@ -103,7 +104,7 @@ pub async fn execute_admin_action(
             console: admin_cmds,
         };
         return match template.render() {
-            Ok(html) => Html(html).into_response(),
+            Ok(html) => with_nocache!(Html(html)),
             Err(err) => {
                 tracing::error!("Template error: {}", err);
                 StatusCode::INTERNAL_SERVER_ERROR.into_response()
@@ -120,7 +121,7 @@ pub async fn execute_admin_action(
                 message: "Invalid command",
             };
             return match template.render() {
-                Ok(html) => Html(html).into_response(),
+                Ok(html) => with_nocache!(Html(html)),
                 Err(err) => {
                     tracing::error!("Template error: {}", err);
                     StatusCode::INTERNAL_SERVER_ERROR.into_response()
@@ -145,7 +146,7 @@ pub async fn execute_admin_action(
     };
 
     match template.render() {
-        Ok(html) => Html(html).into_response(),
+        Ok(html) => with_nocache!(Html(html)),
         Err(err) => {
             tracing::error!("Template error: {}", err);
             StatusCode::INTERNAL_SERVER_ERROR.into_response()

@@ -13,6 +13,7 @@ utils.workspace = true
 askama.workspace = true
 axum.workspace = true
 bcrypt.workspace = true
+http.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 toml.workspace = true

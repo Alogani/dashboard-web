@@ -10,6 +10,7 @@ use limiters_middleware::RateLimiter;
 use state::AppState;
 
 use tower_cookies::Cookies;
+use utils::with_nocache;
 
 use crate::templates::LoginTemplate;
 use auth::identify_user_with_cookie;
@@ -36,7 +37,8 @@ pub async fn login_page(
     };
 
     match template.render() {
-        Ok(html) => Ok(Html(html).into_response()),
+        Ok(html) => Ok(with_nocache!(Html(html))),
+
         Err(err) => {
             tracing::error!("Template error: {}", err);
             Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response())

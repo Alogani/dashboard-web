@@ -10,9 +10,13 @@ use axum::{
 use limiters_middleware::RateLimiter;
 use state::AppState;
 use tower_cookies::Cookies;
+use utils::with_nocache;
 
 use crate::templates::{LoginError, LoginTemplate};
-use auth::{consume_redirect_cookie, set_auth_cookie};
+use auth::redirect_cookie::consume_redirect_cookie;
+use auth::set_auth_cookie;
+use http::HeaderValue;
+use http::header::{CACHE_CONTROL, PRAGMA, VARY};
 
 use serde::Deserialize;
 
@@ -50,14 +54,14 @@ fn get_real_ip(headers: &HeaderMap, socket_addr: &SocketAddr) -> String {
             }
         }
     }
-    
+
     // Try X-Real-IP as fallback
     if let Some(real_ip) = headers.get("X-Real-IP") {
         if let Ok(ip_str) = real_ip.to_str() {
             return ip_str.to_string();
         }
     }
-    
+
     // Fallback to socket address if headers aren't available
     socket_addr.ip().to_string()
 }
@@ -73,7 +77,7 @@ pub async fn login(
 
     // Get the real client IP
     let ip = get_real_ip(&headers, &addr);
-    
+
     // Rate limit the login attempts
     if let Some(response) = check_rate_limit(&rate_limiter, &ip) {
         return Ok(response);
@@ -111,7 +115,7 @@ pub async fn login(
                 route
             };
 
-            return Ok(Redirect::to(&redirect_url).into_response());
+            return Ok(with_nocache!(Redirect::to(&redirect_url)));
         } else {
             tracing::warn!(
                 "User {} is not allowed to access route: {} at subdomain: {:?}",
@@ -124,7 +128,7 @@ pub async fn login(
                 welcome_message: String::new(),
             };
             return match template.render() {
-                Ok(html) => Ok((StatusCode::FORBIDDEN, Html(html)).into_response()),
+                Ok(html) => Ok(with_nocache!((StatusCode::FORBIDDEN, Html(html)))),
                 Err(err) => {
                     tracing::error!("Template error: {}", err);
                     Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response())
@@ -144,7 +148,8 @@ pub async fn login(
         };
 
         match template.render() {
-            Ok(html) => Ok((StatusCode::UNAUTHORIZED, Html(html)).into_response()),
+            Ok(html) => Ok(with_nocache!((StatusCode::UNAUTHORIZED, Html(html)))),
+
             Err(err) => {
                 tracing::error!("Template error: {}", err);
                 Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response())
