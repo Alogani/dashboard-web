@@ -47,12 +47,45 @@ impl AppConfig {
         username: Option<&str>,
     ) -> bool {
         let subdomain = subdomain.unwrap_or("");
-        if let Some(allowed_routes) = self.access_rules.get(subdomain) {
+        if let Some(allowed_routes) = find_allowed_routes(&self.access_rules, subdomain) {
             is_route_allowed_impl(route, username, allowed_routes)
         } else {
             tracing::warn!("No access rules found for subdomain {}", subdomain);
             false
         }
+    }
+}
+
+fn find_allowed_routes<'a>(
+    access_rules: &'a HashMap<String, Vec<(String, Vec<String>)>>,
+    subdomain: &str,
+) -> Option<&'a Vec<(String, Vec<String>)>> {
+    // 1. Exact match takes highest precedence
+    if let Some(routes) = access_rules.get(subdomain) {
+        return Some(routes);
+    }
+
+    // 2. Wildcard match (most specific / longest pattern takes precedence)
+    if !subdomain.is_empty() {
+        access_rules
+            .iter()
+            .filter(|(pattern, _)| matches_subdomain(pattern, subdomain))
+            .max_by_key(|(pattern, _)| pattern.len())
+            .map(|(_, routes)| routes)
+    } else {
+        None
+    }
+}
+
+fn matches_subdomain(pattern: &str, subdomain: &str) -> bool {
+    if pattern == subdomain {
+        true
+    } else if let Some(suffix) = pattern.strip_prefix('*') {
+        !subdomain.is_empty() && subdomain.ends_with(suffix)
+    } else if let Some(prefix) = pattern.strip_suffix('*') {
+        !subdomain.is_empty() && subdomain.starts_with(prefix)
+    } else {
+        false
     }
 }
 
@@ -84,6 +117,7 @@ fn is_route_allowed_impl(
 #[cfg(test)]
 mod tests {
     use super::access_rules_deserialize;
+    use super::find_allowed_routes;
     use super::is_route_allowed_impl;
     use serde::Deserialize;
     use std::collections::HashMap;
@@ -287,5 +321,43 @@ mod tests {
             Some("user"),
             &allowed_routes_multiple_users
         ));
+    }
+
+    #[test]
+    fn test_wildcard_subdomain_matching() {
+        let config_str = r#"
+        [access_rules]
+        "*coding@/" = ["*"]
+        "*coding@/admin" = ["admin"]
+        "specialcoding@/secret" = ["boss"]
+        "vaultwarden@/" = ["desktop"]
+        "/" = ["*"]
+        "#;
+        let config: TestConfig = toml::from_str(config_str).unwrap();
+        let rules = &config.access_rules;
+
+        // Subdomain ending with "coding" matches "*coding"
+        let mycoding = find_allowed_routes(rules, "mycoding").unwrap();
+        assert_eq!(mycoding.len(), 2);
+        assert_eq!(mycoding[0].0, "/admin");
+        assert!(is_route_allowed_impl("/", None, mycoding));
+        assert!(!is_route_allowed_impl("/admin", None, mycoding));
+        assert!(is_route_allowed_impl("/admin", Some("admin"), mycoding));
+
+        // "coding" itself matches "*coding"
+        assert!(find_allowed_routes(rules, "coding").is_some());
+
+        // Exact match takes precedence over wildcard
+        let special = find_allowed_routes(rules, "specialcoding").unwrap();
+        assert_eq!(special.len(), 1);
+        assert_eq!(special[0].0, "/secret");
+
+        // Non-matching subdomain returns None
+        assert!(find_allowed_routes(rules, "otherdomain").is_none());
+
+        // Empty subdomain matches global rules, not wildcards
+        let global = find_allowed_routes(rules, "").unwrap();
+        assert_eq!(global.len(), 1);
+        assert_eq!(global[0].0, "/");
     }
 }
