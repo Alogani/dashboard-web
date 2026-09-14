@@ -33,7 +33,7 @@ users_db = "examples/users_db.txt"
 
 ## Concerning subdomain format
 # "vaultwarden@/admin" is translated to vaultwarden.mydomain.topdomain (eg: vaultwarden.nginx.lan/admin)
-# "*coding@/" will also match each subdomain ending by the part after the wildcard. longest path takes precedence
+# "*.coding@/" will also match each subdomain ending by the part after the wildcard. longest path takes precedence
 # Authorizing a path without subdomain doesn't grant access to the same path on the subdomain (eg: "/admin" won't match "vaultwarden.nginx.lan/admin" but "vaultwarden@/admin" will)
 # So "/" = ["*"] doesn't grant access to any subdomains
 "/" = ["*"]
@@ -44,7 +44,7 @@ users_db = "examples/users_db.txt"
 "vaultwarden@/admin" = ["desktop"]
 "forgejo@/" = ["desktop", "laptop"]
 "sftpgo@/" = ["desktop"]
-"*coding@/" = ["desktop", "laptop"]
+"*.coding@/" = ["desktop", "laptop"]
 "incus@/" = ["desktop"]
 
 
