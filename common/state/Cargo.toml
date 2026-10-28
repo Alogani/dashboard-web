@@ -11,6 +11,7 @@ limiters_middleware.workspace = true
 askama.workspace = true
 axum.workspace = true
 bcrypt.workspace = true
+rand.workspace = true
 serde.workspace = true
 toml.workspace = true
 tokio.workspace = true

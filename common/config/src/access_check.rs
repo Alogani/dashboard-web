@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use serde::{Deserialize, Deserializer};
+use utils::http_helpers::normalize_request_path;
 
 use crate::AppConfig;
 
@@ -40,6 +41,11 @@ fn parse_key(key: &str) -> (String, String) {
 }
 
 impl AppConfig {
+    /// Checks if `username` (None for anonymous) can access `route` on `subdomain`.
+    ///
+    /// `route` is the request target as received (it can contain a query string or
+    /// percent-encoded characters): it is canonicalized before being matched, and
+    /// access is denied if that's not possible.
     pub fn is_access_allowed(
         &self,
         subdomain: Option<&str>,
@@ -47,8 +53,15 @@ impl AppConfig {
         username: Option<&str>,
     ) -> bool {
         let subdomain = subdomain.unwrap_or("");
+        let route = match normalize_request_path(route) {
+            Some(route) => route,
+            None => {
+                tracing::warn!("Denying access to non canonicalizable path {:?}", route);
+                return false;
+            }
+        };
         if let Some(allowed_routes) = find_allowed_routes(&self.access_rules, subdomain) {
-            is_route_allowed_impl(route, username, allowed_routes)
+            is_route_allowed_impl(&route, username, allowed_routes)
         } else {
             tracing::warn!("No access rules found for subdomain {}", subdomain);
             false
@@ -102,13 +115,9 @@ fn is_route_allowed_impl(
             || (allowed_route.ends_with('*')
                 && route.starts_with(allowed_route.trim_end_matches('*')))
         {
-            if allowed_users.contains(&"*".to_string())
-                || matches!(username, Some(username) if allowed_users.contains(&username.to_string()))
-            {
-                return true;
-            } else {
-                return false;
-            }
+            return allowed_users.iter().any(|allowed_user| {
+                allowed_user == "*" || Some(allowed_user.as_str()) == username
+            });
         }
     }
     false
@@ -359,5 +368,66 @@ mod tests {
         let global = find_allowed_routes(rules, "").unwrap();
         assert_eq!(global.len(), 1);
         assert_eq!(global[0].0, "/");
+    }
+
+    #[test]
+    fn test_is_access_allowed_canonicalizes_path() {
+        let config: crate::AppConfig = toml::from_str(
+            r#"
+            static_folder = "static"
+            log_level = "info"
+            cookie_domain = ""
+            users_db = "users_db.txt"
+            secure_cookies = true
+            cookie_duration = 24
+            [access_rules]
+            "/" = ["*"]
+            "/action_dashboard/cmd/router_poweroff" = ["admin"]
+            "vaultwarden@/" = ["*"]
+            "vaultwarden@/admin" = ["admin"]
+            [external_links]
+            [admin_commands]
+            [admin_commands.hosts]
+            [admin_commands.panels]
+            [admin_commands.commands]
+            "#,
+        )
+        .unwrap();
+
+        let denied = [
+            "/action_dashboard/cmd/router_poweroff",
+            "/action_dashboard/cmd/router%5Fpoweroff",
+            "/action_dashboard//cmd/router_poweroff",
+            "/action_dashboard/./cmd/router_poweroff",
+            "/action_dashboard/cmd/router_poweroff?x=1",
+            "/static/../action_dashboard/cmd/router_poweroff",
+            "/static/%2e%2e/action_dashboard/cmd/router_poweroff",
+        ];
+        for route in denied {
+            assert!(!config.is_access_allowed(None, route, None), "{}", route);
+        }
+        assert!(config.is_access_allowed(
+            None,
+            "/action_dashboard/cmd/router%5Fpoweroff",
+            Some("admin")
+        ));
+
+        let denied_subdomain = [
+            "/admin",
+            "/admin?x=1",
+            "/%61dmin",
+            "//admin",
+            "/./admin",
+            "/x/../admin",
+        ];
+        for route in denied_subdomain {
+            assert!(
+                !config.is_access_allowed(Some("vaultwarden"), route, None),
+                "{}",
+                route
+            );
+        }
+        assert!(config.is_access_allowed(Some("vaultwarden"), "/admin?x=1", Some("admin")));
+        assert!(config.is_access_allowed(Some("vaultwarden"), "/api?x=1", None));
     }
 }

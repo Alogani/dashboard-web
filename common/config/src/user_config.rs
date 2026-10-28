@@ -1,53 +1,45 @@
 use bcrypt::{DEFAULT_COST, hash, verify};
-use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
+use std::io::Write;
 use std::path::Path;
+use std::sync::LazyLock;
 
 use app_errors::AppError;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
 pub struct UsersConfig {
-    #[serde(skip)]
-    common_salt: String,
-    // Username alongside the hash of their password
+    // Username alongside the bcrypt hash of their password
     #[serde(flatten)]
-    users_private: HashMap<String, String>,
-    // Username alongside a public hash of their password with a common salt
-    #[serde(skip)]
-    users_public: HashMap<String, String>,
-    // Reverse lookup: public hash to username
-    #[serde(skip)]
-    public_hash_to_username: HashMap<String, String>,
+    users: HashMap<String, String>,
 }
 
-fn generate_random_salt() -> String {
-    let bytes = rand::rng()
-        .sample_iter(&rand::distr::Alphanumeric)
-        .take(16)
-        .collect::<Vec<u8>>();
-    String::from_utf8_lossy(&bytes).to_string()
-}
+// Hash verified when the user doesn't exist, so that the response time doesn't reveal
+// whether a username is valid
+static DUMMY_HASH: LazyLock<String> =
+    LazyLock::new(|| hash("dummy password", DEFAULT_COST).expect("bcrypt hashing failed"));
 
-fn compute_private_hash(password: &str) -> Result<String, AppError> {
-    let private_hash = hash(password, DEFAULT_COST)?;
-    Ok(private_hash)
-}
-
-fn compute_public_hash(username: &str, private_hash: &str, salt: &str) -> Result<String, AppError> {
-    let public_hash = hash(&format!("{username}{private_hash}{salt}"), DEFAULT_COST)?;
-    Ok(public_hash)
+/// Verifies a password against a bcrypt hash. When no hash is given, a dummy one is
+/// still verified to keep a constant response time, and `false` is returned.
+///
+/// This is CPU intensive (~0.25s), so it should not be called directly from async code.
+pub fn verify_password_hash(password: &str, password_hash: Option<&str>) -> bool {
+    match password_hash {
+        Some(password_hash) => verify(password, password_hash).unwrap_or_else(|err| {
+            tracing::error!("Failed to verify password hash: {}", err);
+            false
+        }),
+        None => {
+            let _ = verify(password, &DUMMY_HASH);
+            false
+        }
+    }
 }
 
 impl UsersConfig {
     pub fn new() -> Self {
-        UsersConfig {
-            common_salt: generate_random_salt(),
-            users_private: HashMap::new(),
-            users_public: HashMap::new(),
-            public_hash_to_username: HashMap::new(),
-        }
+        Self::default()
     }
 
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self, AppError> {
@@ -58,95 +50,120 @@ impl UsersConfig {
                 e
             ))
         })?;
-        let mut config: UsersConfig = toml::from_str(&content).map_err(|e| {
+        toml::from_str(&content).map_err(|e| {
             AppError::ConfigurationError(format!(
                 "Error encountered while trying to read users config at {:?}: {:?}",
                 path.as_ref().display(),
                 e
             ))
-        })?;
-
-        // Generate a common salt if it doesn't exist
-        if config.common_salt.is_empty() {
-            config.common_salt = generate_random_salt();
-        }
-
-        // Compute common_salt_hash for each user and build reverse lookup
-        for (username, password_hash) in &config.users_private {
-            let public_hash = compute_public_hash(username, &password_hash, &config.common_salt)?;
-            config
-                .users_public
-                .insert(username.clone(), public_hash.clone());
-            config
-                .public_hash_to_username
-                .insert(public_hash, username.clone());
-        }
-
-        Ok(config)
+        })
     }
 
+    /// Writes the users file, readable only by its owner as it contains password hashes
     pub fn to_file<P: AsRef<Path>>(&self, path: P) -> Result<(), AppError> {
         let serialized = toml::to_string(&self)?;
-        fs::write(path, serialized)?;
+        let mut options = fs::OpenOptions::new();
+        options.write(true).create(true).truncate(true);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
+            options.mode(0o600);
+            // The mode is only applied on creation
+            if path.as_ref().exists() {
+                fs::set_permissions(&path, fs::Permissions::from_mode(0o600))?;
+            }
+        }
+        let mut file = options.open(&path)?;
+        file.write_all(serialized.as_bytes())?;
         Ok(())
     }
 
     pub fn add_or_update_user(&mut self, username: String, password: &str) -> Result<(), AppError> {
-        let private_hash = compute_private_hash(password)?;
-        let public_hash = compute_public_hash(&username, &private_hash, &self.common_salt)?;
-
-        // Remove old public hash from reverse lookup if it exists
-        if let Some(old_public_hash) = self.users_public.get(&username) {
-            self.public_hash_to_username.remove(old_public_hash);
-        }
-
-        self.users_private.insert(username.clone(), private_hash);
-        self.users_public
-            .insert(username.clone(), public_hash.clone());
-        self.public_hash_to_username.insert(public_hash, username);
-
+        let password_hash = hash(password, DEFAULT_COST)?;
+        self.users.insert(username, password_hash);
         Ok(())
     }
 
     pub fn delete_user(&mut self, username: &str) -> Result<(), AppError> {
-        self.users_public
+        self.users
             .remove(username)
-            .and_then(|public_hash| self.public_hash_to_username.remove(&public_hash))
-            .and_then(|_| self.users_private.remove(username))
-            .and(None)
+            .map(|_| ())
             .ok_or(AppError::ConfigurationError(
-                "User not found in users_public config.".to_string(),
+                "User not found in users config.".to_string(),
             ))
     }
 
     pub fn list_users(&self) -> Vec<String> {
-        self.users_public.keys().cloned().collect()
+        self.users.keys().cloned().collect()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.users_public.is_empty()
+        self.users.is_empty()
     }
 
     pub fn contains_user(&self, username: &str) -> bool {
-        self.users_public.contains_key(username)
+        self.users.contains_key(username)
     }
 
-    pub fn verify_password(&self, username: &str, password: &str) -> Result<bool, AppError> {
-        if let Some(private_hash) = self.users_private.get(username) {
-            verify(password, private_hash)?;
-            Ok(true)
-        } else {
-            Err(AppError::ConfigurationError(
-                "User not found in users_private config.".to_string(),
-            ))
+    pub fn get_password_hash(&self, username: &str) -> Option<&String> {
+        self.users.get(username)
+    }
+
+    pub fn verify_password(&self, username: &str, password: &str) -> bool {
+        verify_password_hash(
+            password,
+            self.get_password_hash(username).map(String::as_str),
+        )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_verify_password() {
+        let mut config = UsersConfig::new();
+        config
+            .add_or_update_user("alice".to_string(), "correct horse")
+            .unwrap();
+
+        assert!(config.verify_password("alice", "correct horse"));
+        assert!(!config.verify_password("alice", "wrong password"));
+        assert!(!config.verify_password("alice", ""));
+        assert!(!config.verify_password("bob", "correct horse"));
+    }
+
+    #[test]
+    fn test_delete_user() {
+        let mut config = UsersConfig::new();
+        config
+            .add_or_update_user("alice".to_string(), "pwd")
+            .unwrap();
+
+        assert!(config.delete_user("alice").is_ok());
+        assert!(!config.contains_user("alice"));
+        assert!(config.delete_user("alice").is_err());
+    }
+
+    #[test]
+    fn test_users_file_roundtrip() {
+        let path = std::env::temp_dir().join(format!("users_db_test_{}.txt", std::process::id()));
+        let mut config = UsersConfig::new();
+        config
+            .add_or_update_user("alice".to_string(), "pwd")
+            .unwrap();
+        config.to_file(&path).unwrap();
+
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mode = fs::metadata(&path).unwrap().permissions().mode();
+            assert_eq!(mode & 0o777, 0o600);
         }
-    }
 
-    pub fn get_public_hash(&self, username: &str) -> Option<&String> {
-        self.users_public.get(username)
-    }
-
-    pub fn get_username_from_public_hash(&self, public_hash: &str) -> Option<&String> {
-        self.public_hash_to_username.get(public_hash)
+        let loaded = UsersConfig::from_file(&path).unwrap();
+        fs::remove_file(&path).unwrap();
+        assert!(loaded.verify_password("alice", "pwd"));
     }
 }

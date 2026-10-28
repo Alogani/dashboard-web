@@ -1,7 +1,7 @@
 use app_errors::AppError;
 use config::UsersConfig;
 use std::{
-    io::{self, BufRead, Write},
+    io::{self, BufRead, IsTerminal, Write},
     path::Path,
 };
 
@@ -76,6 +76,11 @@ fn add_or_update_user(
         println!("Username cannot be empty.");
         return Ok(());
     }
+    // "*" has a special meaning in access rules
+    if username == "*" || username.chars().any(|c| c.is_control()) {
+        println!("Invalid username.");
+        return Ok(());
+    }
 
     // Check if user already exists
     let user_exists = users_config.contains_user(&username);
@@ -95,7 +100,14 @@ fn add_or_update_user(
     }
 
     // Get password
-    let password = get_password_with_confirmation(reader)?;
+    let password = match get_password_with_confirmation(reader) {
+        Ok(password) => password,
+        Err(e) if e.kind() == io::ErrorKind::InvalidInput => {
+            println!("{}. Operation cancelled.", e);
+            return Ok(());
+        }
+        Err(e) => return Err(e.into()),
+    };
 
     // Generate hash and update user
     match users_config.add_or_update_user(username.clone(), &password) {
@@ -114,14 +126,21 @@ fn add_or_update_user(
     }
 }
 
-fn get_password_with_confirmation(reader: &mut impl BufRead) -> Result<String, io::Error> {
-    let mut input = String::new();
-
-    print!("Enter password: ");
+/// Reads a password without echoing it when used interactively
+fn read_password(reader: &mut impl BufRead, prompt: &str) -> Result<String, io::Error> {
+    print!("{}", prompt);
     io::stdout().flush()?;
-    input.clear();
-    reader.read_line(&mut input)?;
-    let password = input.trim().to_string();
+    if io::stdin().is_terminal() {
+        rpassword::read_password()
+    } else {
+        let mut input = String::new();
+        reader.read_line(&mut input)?;
+        Ok(input.trim_end_matches(['\r', '\n']).to_string())
+    }
+}
+
+fn get_password_with_confirmation(reader: &mut impl BufRead) -> Result<String, io::Error> {
+    let password = read_password(reader, "Enter password: ")?;
 
     if password.is_empty() {
         return Err(io::Error::new(
@@ -130,11 +149,7 @@ fn get_password_with_confirmation(reader: &mut impl BufRead) -> Result<String, i
         ));
     }
 
-    print!("Confirm password: ");
-    io::stdout().flush()?;
-    input.clear();
-    reader.read_line(&mut input)?;
-    let confirm_password = input.trim().to_string();
+    let confirm_password = read_password(reader, "Confirm password: ")?;
 
     if password != confirm_password {
         return Err(io::Error::new(
@@ -197,7 +212,7 @@ fn delete_user(users_config: &mut UsersConfig, reader: &mut impl BufRead) -> Res
     reader.read_line(&mut input)?;
 
     if input.trim().eq_ignore_ascii_case("y") {
-        let _ = users_config.delete_user(&username);
+        users_config.delete_user(&username)?;
         println!("User '{}' deleted successfully.", username);
     } else {
         println!("Deletion cancelled.");

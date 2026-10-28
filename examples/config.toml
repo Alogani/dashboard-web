@@ -1,6 +1,7 @@
 # This configuration file is read at startup
 # In case of change, you must restart the application, this will expire all authentication cookie, making a new login required
 # If you changed only the passwords, you can send SIGHUP to reload the users and passwords without restarting
+# (sessions of the users whose password changed or who were deleted are then revoked)
 
 # Example of a full configuration file close to what I currently use but tweaked for debugging
 
@@ -25,6 +26,8 @@ users_db = "examples/users_db.txt"
 # By default routes are not allowed except explictly allowed.
 # Most precise rules (aka longer urls) take precedence (eg: "/static/css" is a stronger rule than "/static" or "/static/*")
 # Special path /auth/ is always authorized
+# Urls are decoded and normalized before being matched (eg: "/%61dmin", "//admin" and "/admin?x" all match "/admin"),
+# urls containing ".." segments are always rejected
 
 ## Concerning users
 # ["*"] means that no login is done, so the path is accessible without a login requirement
@@ -38,6 +41,8 @@ users_db = "examples/users_db.txt"
 # So "/" = ["*"] doesn't grant access to any subdomains
 "/" = ["*"]
 "/static/css/" = ["*"]
+# Commands are executed on the servers: never make them accessible without login
+"/action_dashboard" = ["desktop", "laptop"]
 "/action_dashboard/cmd/admin_*" = ["desktop", "laptop"]
 "/action_dashboard/cmd/router_poweroff" = ["desktop", "laptop"]
 "vaultwarden@/" = ["*"]
@@ -78,6 +83,7 @@ router_panel = "Router Panel"
 #     panel => in which panel will it be display, as defined in [admin_commands.panels] (must match)
 #     command => the command that will be really executed (either locally or using ssh)
 # }
+# Commands are executed with a POST request on those urls (the dashboard buttons do that)
 # eg: The following will create an url at /action_dashboard/cmd/uptime_stats that will execute locally `sh -c "uptime"`
 uptime_stats = { name = "uptime", host = "local", panel = "main_panel", command = "uptime" }
 # eg: The following will create an url at /action_dashboard/cmd/admin_stats that will execute locally `ssh alogani@server.lan stats`

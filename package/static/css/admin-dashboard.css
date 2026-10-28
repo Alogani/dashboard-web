@@ -47,6 +47,14 @@
     font-weight: bold;
     transition: background-color 0.2s, transform 0.1s;
     display: inline-block;
+    border: none;
+    font-family: inherit;
+    font-size: inherit;
+    cursor: pointer;
+}
+
+.command-form {
+    margin: 0;
 }
 
 .command-button:hover {

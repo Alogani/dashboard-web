@@ -7,3 +7,4 @@ edition = "2024"
 app_errors.workspace = true
 auth.workspace = true
 config.workspace = true
+rpassword = "7.4"

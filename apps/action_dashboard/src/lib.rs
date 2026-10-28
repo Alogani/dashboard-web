@@ -5,7 +5,7 @@ use axum::{
     extract::State,
     http::StatusCode,
     response::{Html, IntoResponse},
-    routing::get,
+    routing::{get, post},
 };
 use limiters_middleware::RateLimiter;
 use state::AppState;
@@ -35,6 +35,7 @@ pub fn router(State(state): State<AppState>) -> Router<AppState> {
                 }
             }),
         )
-        .route("/cmd/{cmd_name}", get(execute_admin_action))
+        // Commands are only executed through POST requests, to protect them against CSRF
+        .route("/cmd/{cmd_name}", post(execute_admin_action))
         .with_state((state, rate_limiter))
 }

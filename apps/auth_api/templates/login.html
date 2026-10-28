@@ -37,21 +37,3 @@
         </div>
     </div>
 {% endblock %}
-
-{% block scripts %}
-    <script>
-        // Show welcome message when username is entered
-        document.getElementById('username').addEventListener('input', function() {
-            const username = this.value.trim();
-            const welcomeMessage = document.getElementById('welcomeMessage');
-            const displayUsername = document.getElementById('displayUsername');
-            
-            if (username) {
-                displayUsername.textContent = username;
-                welcomeMessage.style.display = 'block';
-            } else {
-                welcomeMessage.style.display = 'none';
-            }
-        });
-    </script>
-{% endblock %}

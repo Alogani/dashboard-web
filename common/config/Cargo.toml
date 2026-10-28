@@ -8,7 +8,6 @@ app_errors = { path = "../app_errors" }
 utils = { path = "../utils" }
 axum.workspace = true
 bcrypt.workspace = true
-rand.workspace = true
 serde.workspace = true
 tokio.workspace = true
 toml.workspace = true

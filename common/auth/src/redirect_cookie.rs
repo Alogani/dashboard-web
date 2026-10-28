@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use state::AppState;
 use tower_cookies::{Cookie, Cookies, cookie::CookieBuilder};
+use utils::http_helpers::{is_safe_redirect_path, is_valid_subdomain};
 
 const COOKIE_NAME: &str = "AuthRedirect";
 
@@ -28,6 +29,8 @@ pub fn set_redirect_cookie(
     cookies.add(build_cookie(serialized, state).into());
 }
 
+/// Returns the redirection stored in the cookie and removes it.
+/// Redirections that could lead outside of the cookie domain are discarded.
 pub fn consume_redirect_cookie(
     cookies: &Cookies,
     state: &AppState,
@@ -38,7 +41,19 @@ pub fn consume_redirect_cookie(
         tracing::trace!("Cleared redirect cookie");
 
         match serde_json::from_str::<RedirectData>(serialized_value) {
-            Ok(redirect_data) => Some((redirect_data.subdomain, redirect_data.path)),
+            Ok(redirect_data)
+                if is_safe_redirect_path(&redirect_data.path)
+                    && redirect_data
+                        .subdomain
+                        .as_deref()
+                        .is_none_or(is_valid_subdomain) =>
+            {
+                Some((redirect_data.subdomain, redirect_data.path))
+            }
+            Ok(_) => {
+                tracing::warn!("Discarding unsafe redirect cookie: {}", serialized_value);
+                None
+            }
             Err(err) => {
                 tracing::error!("Failed to deserialize redirect cookie: {}", err);
                 None

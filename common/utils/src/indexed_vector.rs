@@ -12,16 +12,14 @@ where
 
 impl<K, V> IndexedVector<K, V>
 where
-    K: Into<usize> + From<usize>,
+    K: Into<usize> + From<usize> + Clone,
 {
     pub fn get(&self, index: &K) -> Option<&V> {
-        let idx = unsafe { std::ptr::read(index) }.into();
-        self.data.get(idx)
+        self.data.get(index.clone().into())
     }
 
     pub fn get_mut(&mut self, index: &K) -> Option<&mut V> {
-        let idx = unsafe { std::ptr::read(index) }.into();
-        self.data.get_mut(idx)
+        self.data.get_mut(index.clone().into())
     }
 
     pub fn insert(&mut self, index: K, value: V) -> Option<V> {
@@ -36,7 +34,7 @@ where
         }
     }
 
-    pub fn iter(&self) -> IndexedVectorIter<K, V> {
+    pub fn iter(&self) -> IndexedVectorIter<'_, K, V> {
         IndexedVectorIter {
             inner: self.data.iter().enumerate(),
             phantom: PhantomData,
