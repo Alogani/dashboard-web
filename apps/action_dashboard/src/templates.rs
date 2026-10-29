@@ -8,6 +8,13 @@ pub struct AdminConsoleView<'a> {
 }
 
 #[derive(Template)]
+#[template(path = "action_confirm.html")]
+pub struct ActionConfirm<'a> {
+    pub url_name: &'a str,
+    pub action_name: &'a str,
+}
+
+#[derive(Template)]
 #[template(path = "action_result.html")]
 pub struct ActionResult<'a> {
     pub action_name: &'a str,

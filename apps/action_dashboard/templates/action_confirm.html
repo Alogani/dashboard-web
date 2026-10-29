@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}Confirm Action{% endblock %}
+
+{% block content %}
+<h1>Run action: {{ action_name }}?</h1>
+<form method="post" action="/action_dashboard/cmd/{{ url_name }}" class="command-form">
+    <button type="submit" class="command-button">{{ action_name }}</button>
+</form>
+<a href="/action_dashboard" class="back-link">← Back to Action Dashboard</a>
+{% endblock %}

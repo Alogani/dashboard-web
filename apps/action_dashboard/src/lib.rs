@@ -1,11 +1,11 @@
-use admin_executor::execute_admin_action;
+use admin_executor::{confirm_admin_action, execute_admin_action};
 use askama::Template;
 use axum::{
     Router,
     extract::State,
     http::StatusCode,
     response::{Html, IntoResponse},
-    routing::{get, post},
+    routing::get,
 };
 use limiters_middleware::RateLimiter;
 use state::AppState;
@@ -35,7 +35,11 @@ pub fn router(State(state): State<AppState>) -> Router<AppState> {
                 }
             }),
         )
-        // Commands are only executed through POST requests, to protect them against CSRF
-        .route("/cmd/{cmd_name}", post(execute_admin_action))
+        // Commands are only executed through POST requests, to protect them against CSRF.
+        // GET displays a confirmation page
+        .route(
+            "/cmd/{cmd_name}",
+            get(confirm_admin_action).post(execute_admin_action),
+        )
         .with_state((state, rate_limiter))
 }
