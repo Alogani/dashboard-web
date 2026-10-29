@@ -13,7 +13,7 @@ use tokio::process::Command;
 use utils::http_helpers::{get_client_ip, is_same_origin_request};
 use utils::with_nocache;
 
-use crate::templates::{ActionResult, ExecutionError};
+use crate::templates::{ActionConfirm, ActionResult, ExecutionError};
 
 const COMMAND_TIMEOUT: Duration = Duration::from_secs(120);
 
@@ -89,6 +89,31 @@ async fn execute_command(cmd: &str, ssh_address: &str) -> String {
             }
         }
         Err(e) => format!("Failed to execute command: {}", e),
+    }
+}
+
+/// Asks for a confirmation before executing a command, so that a command url opened with GET
+/// (e.g. when redirected back after login, or from a bookmark) doesn't execute it directly
+pub async fn confirm_admin_action(
+    State((app_state, _)): State<(AppState, RateLimiter)>,
+    Path(cmd_key): Path<String>,
+) -> Response {
+    let admin_cmds = app_state.get_app_config().get_admin_commands();
+    let cmd_info = match admin_cmds.get_action_by_url(&cmd_key) {
+        Some(cmd) => cmd,
+        None => return render_error(StatusCode::NOT_FOUND, "Invalid command"),
+    };
+
+    let template = ActionConfirm {
+        url_name: &cmd_info.url_name,
+        action_name: &cmd_info.pretty_name,
+    };
+    match template.render() {
+        Ok(html) => with_nocache!(Html(html)),
+        Err(err) => {
+            tracing::error!("Template error: {}", err);
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
     }
 }
 
