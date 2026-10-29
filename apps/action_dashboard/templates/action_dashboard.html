@@ -10,7 +10,9 @@
         <div class="command-buttons">
             {% for cmd_id in panel_info.actions.iter() %}
             {% let cmd_info = console.actions.get(cmd_id).unwrap() %}
-            <a href="/action_dashboard/cmd/{{ cmd_info.url_name }}" class="command-button">{{ cmd_info.pretty_name }}</a>
+            <form method="post" action="/action_dashboard/cmd/{{ cmd_info.url_name }}" class="command-form">
+                <button type="submit" class="command-button">{{ cmd_info.pretty_name }}</button>
+            </form>
             {% endfor %}
         </div>
     </div>

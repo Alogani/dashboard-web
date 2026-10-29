@@ -1,6 +1,6 @@
 use axum::{
     extract::State,
-    http::{HeaderMap, HeaderValue, StatusCode, header},
+    http::{HeaderMap, HeaderValue, StatusCode},
     response::{IntoResponse, Response},
 };
 use limiters_middleware::RateLimiter;
@@ -8,7 +8,7 @@ use state::AppState;
 use tower_cookies::Cookies;
 
 use auth::{identify_user_with_cookie, set_redirect_cookie};
-use utils::http_helpers::extract_path_from_url;
+use utils::http_helpers::is_valid_subdomain;
 
 // Only check for subdomains
 pub async fn check(
@@ -30,28 +30,28 @@ pub async fn check(
         tracing::debug!("No subdomain provided in request");
         return (StatusCode::BAD_REQUEST, "No subdomain provided").into_response();
     }
+    if !is_valid_subdomain(subdomain) {
+        tracing::warn!("Invalid subdomain provided in request: {:?}", subdomain);
+        return (StatusCode::BAD_REQUEST, "Invalid subdomain").into_response();
+    }
 
-    // Get the original URI if available
+    // Get the original URI (path and query) if available, it is canonicalized by the access check
     let original_uri = headers
         .get("x-original-uri")
         .and_then(|h| h.to_str().ok())
         .unwrap_or("/");
 
-    // Extract path from the original URI
-    let path = extract_path_from_url(original_uri).unwrap_or(original_uri.to_string());
-
-    if state.is_access_allowed(Some(&subdomain), &path, username.as_deref()) {
+    if state.is_access_allowed(Some(subdomain), original_uri, username.as_deref()) {
         tracing::debug!(
             "User {:?} is allowed to access subdomain {}",
             username,
             subdomain
         );
         let mut response = StatusCode::OK.into_response();
-        if let Some(username) = username {
-            response.headers_mut().insert(
-                "X-Authenticated-User",
-                HeaderValue::from_str(&username).unwrap(),
-            );
+        if let Some(header_value) = username.and_then(|u| HeaderValue::from_str(&u).ok()) {
+            response
+                .headers_mut()
+                .insert("X-Authenticated-User", header_value);
         }
         response
     } else {
@@ -61,23 +61,12 @@ pub async fn check(
             subdomain
         );
 
-        // Set the redirect cookie
-        set_redirect_cookie(&cookies, &state, (Some(subdomain.to_string()), path));
+        set_redirect_cookie(
+            &cookies,
+            &state,
+            (Some(subdomain.to_string()), original_uri.to_string()),
+        );
 
-        // Return an unauthorized status
-        //StatusCode::UNAUTHORIZED.into_response()
-        let mut response = StatusCode::UNAUTHORIZED.into_response();
-
-        // Manually add Set-Cookie header
-        if let Some(cookie) = cookies.get("AuthRedirect2") {
-            response.headers_mut().insert(
-                header::SET_COOKIE,
-                HeaderValue::from_str(&cookie.to_string()).unwrap(),
-            );
-        }
-
-        // Log response headers
-        tracing::debug!("Response headers: {:?}", response.headers());
-        response
+        StatusCode::UNAUTHORIZED.into_response()
     }
 }

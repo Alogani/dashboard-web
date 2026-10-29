@@ -1,8 +1,10 @@
 mod logging;
+mod sessions;
 mod signal_handlers;
 
 use app_errors::AppError;
 use logging::{TracingReloadHandler, reload_logging, setup_logging};
+pub use sessions::SessionStore;
 use signal_handlers::spawn_sighup_watcher;
 use std::{ops::Deref, sync::Arc};
 use tokio::sync::{RwLock, RwLockReadGuard};
@@ -13,6 +15,7 @@ use config::{AppConfig, UsersConfig};
 pub struct AppState {
     app_config: Arc<AppConfig>,
     user_config: Arc<RwLock<UsersConfig>>,
+    sessions: Arc<SessionStore>,
     tracing_reloader: Arc<Option<TracingReloadHandler>>,
 }
 
@@ -35,6 +38,7 @@ impl AppState {
         let result = AppState {
             app_config: Arc::new(app_config),
             user_config: Arc::new(RwLock::new(users_config)),
+            sessions: Arc::new(SessionStore::default()),
             tracing_reloader: Arc::new(tracing_reloader),
         };
         spawn_sighup_watcher(result.clone());
@@ -47,14 +51,24 @@ impl AppState {
         Ok(())
     }
 
+    /// Reloads the users file and revokes the sessions of the users that were
+    /// deleted or whose password changed
     pub async fn reload_user_config(&self) -> Result<(), AppError> {
+        let new_config = UsersConfig::from_file(self.get_usersdb_path())?;
         let mut user_config = self.user_config.write().await;
-        *user_config = UsersConfig::from_file(self.get_usersdb_path())?;
+        self.sessions.revoke_users(|username| {
+            user_config.get_password_hash(username) != new_config.get_password_hash(username)
+        });
+        *user_config = new_config;
         Ok(())
     }
 
-    pub async fn get_users_config(&self) -> RwLockReadGuard<UsersConfig> {
+    pub async fn get_users_config(&self) -> RwLockReadGuard<'_, UsersConfig> {
         self.user_config.read().await
+    }
+
+    pub fn get_sessions(&self) -> &SessionStore {
+        &self.sessions
     }
 
     pub fn get_app_config(&self) -> &AppConfig {

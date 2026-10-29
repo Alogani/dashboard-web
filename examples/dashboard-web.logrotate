@@ -5,7 +5,7 @@
     delaycompress
     missingok
     notifempty
-    create 0644 root root
+    create 0640 root root
     sharedscripts
     postrotate
         /etc/init.d/dashboard-web reload

@@ -20,6 +20,8 @@ pub async fn auth_middleware(
     let path = req.uri().path().to_string();
     tracing::debug!("Auth middleware checking path: {}", path);
 
+    // The path is checked as received by the router: an encoded or relative variant of
+    // an auth route won't be routed to it
     if path.starts_with(AUTH_ROUTES) {
         tracing::debug!("Skipping authentication for {}", path);
         return next.run(req).await;
@@ -50,7 +52,12 @@ pub async fn auth_middleware(
 
     // If not authenticated or not authorized, redirect to login
     tracing::debug!("Redirecting to login page");
-    set_redirect_cookie(&cookies, &state, (None, path));
+    let path_and_query = req
+        .uri()
+        .path_and_query()
+        .map(|p| p.as_str().to_string())
+        .unwrap_or(path);
+    set_redirect_cookie(&cookies, &state, (None, path_and_query));
 
     with_nocache!(Redirect::to(LOGIN_PATH))
 }

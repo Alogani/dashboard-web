@@ -48,6 +48,8 @@ if [ ! -f "$CONFIG_DIR/users_db.txt" ]; then
     echo "Creating empty users_db.txt file..."
     touch "$CONFIG_DIR/users_db.txt"
 fi
+# The users file contains password hashes
+chmod 600 "$CONFIG_DIR/users_db.txt"
 
 # Install static files
 echo "Installing static files..."

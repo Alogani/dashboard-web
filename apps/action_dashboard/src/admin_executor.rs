@@ -1,61 +1,66 @@
 use askama::Template;
 use axum::{
-    extract::{ConnectInfo, Path, Query, State},
+    extract::{ConnectInfo, Path, State},
     http::{HeaderMap, StatusCode},
     response::{Html, IntoResponse, Response},
 };
 use limiters_middleware::RateLimiter;
 use state::AppState;
-use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::process::Stdio;
+use std::time::Duration;
 use tokio::process::Command;
+use utils::http_helpers::{get_client_ip, is_same_origin_request};
 use utils::with_nocache;
 
-use crate::templates::{ActionResult, AdminConsoleView, ExecutionError};
+use crate::templates::{ActionResult, ExecutionError};
 
-/// Checks if the request should be rate limited based on IP address
-fn check_rate_limit(rate_limiter: &RateLimiter, ip: &str) -> Option<Response> {
-    if !rate_limiter.check_limit(ip) {
-        let template = ExecutionError {
-            message: "Too fast. Wait a sec.",
-        };
-        return match template.render() {
-            Ok(html) => Some(with_nocache!(Html(html))),
-            Err(err) => {
-                tracing::error!("Template error: {}", err);
-                Some(StatusCode::INTERNAL_SERVER_ERROR.into_response())
-            }
-        };
+const COMMAND_TIMEOUT: Duration = Duration::from_secs(120);
+
+fn render_error(status: StatusCode, message: &str) -> Response {
+    let template = ExecutionError { message };
+    match template.render() {
+        Ok(html) => with_nocache!((status, Html(html))),
+        Err(err) => {
+            tracing::error!("Template error: {}", err);
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
     }
-    None
 }
 
 async fn execute_command(cmd: &str, ssh_address: &str) -> String {
-    let child_process = if ssh_address.is_empty() {
-        Command::new("sh").args(vec!["-c", cmd]).spawn()
+    let mut command = if ssh_address.is_empty() {
+        let mut command = Command::new("sh");
+        command.args(["-c", cmd]);
+        command
     } else {
-        Command::new("ssh")
-            .arg(ssh_address)
-            .args(vec![
+        let mut command = Command::new("ssh");
+        command
+            .args([
                 "-o",
                 "BatchMode=yes",
                 "-o",
                 "StrictHostKeyChecking=accept-new",
                 "-o",
                 "ConnectTimeout=10",
+                "--",
             ])
-            .arg(cmd)
-            .stdin(Stdio::null())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
+            .arg(ssh_address)
+            .arg(cmd);
+        command
     };
+    let child_process = command
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .kill_on_drop(true)
+        .spawn();
+
     match child_process {
         Ok(child) => {
             // Wait for the command to complete and capture output
-            match child.wait_with_output().await {
-                Ok(output) => {
+            match tokio::time::timeout(COMMAND_TIMEOUT, child.wait_with_output()).await {
+                Ok(Ok(output)) => {
                     if output.status.success() {
                         tracing::info!("Command '{}' executed successfully", cmd);
                         String::from_utf8_lossy(&output.stdout).into_owned()
@@ -73,71 +78,56 @@ async fn execute_command(cmd: &str, ssh_address: &str) -> String {
                         )
                     }
                 }
-                Err(e) => format!("Failed to get command output: {}", e),
+                Ok(Err(e)) => format!("Failed to get command output: {}", e),
+                Err(_) => {
+                    tracing::error!("Command '{}' timed out", cmd);
+                    format!(
+                        "Command timed out after {} seconds",
+                        COMMAND_TIMEOUT.as_secs()
+                    )
+                }
             }
         }
-        Err(e) => format!("Failed to execute SSH: {}", e),
+        Err(e) => format!("Failed to execute command: {}", e),
     }
 }
 
 pub async fn execute_admin_action(
     State((app_state, rate_limiter)): State<(AppState, RateLimiter)>,
-    _headers: HeaderMap,
-    path_params: Option<Path<String>>,
-    _query: Query<HashMap<String, String>>,
+    headers: HeaderMap,
+    Path(cmd_key): Path<String>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
 ) -> Response {
+    // Commands have side effects: refuse requests forged by other sites (CSRF)
+    if !is_same_origin_request(&headers) {
+        tracing::warn!("Rejected cross-origin request to execute '{}'", cmd_key);
+        return render_error(StatusCode::FORBIDDEN, "Cross-origin request rejected");
+    }
+
     // Rate limit by IP
-    let ip = addr.ip().to_string();
-    if let Some(response) = check_rate_limit(&rate_limiter, &ip) {
-        return response;
+    let ip = get_client_ip(&headers, &addr);
+    if !rate_limiter.check_limit(&ip) {
+        return render_error(StatusCode::TOO_MANY_REQUESTS, "Too fast. Wait a sec.");
     }
 
     let admin_cmds = app_state.get_app_config().get_admin_commands();
-
-    // Get command from path parameter only
-    let cmd_key = path_params.map(|Path(cmd_name)| cmd_name);
-
-    // If no command is specified, render the admin panels
-    if cmd_key.is_none() {
-        let template = AdminConsoleView {
-            console: admin_cmds,
-        };
-        return match template.render() {
-            Ok(html) => with_nocache!(Html(html)),
-            Err(err) => {
-                tracing::error!("Template error: {}", err);
-                StatusCode::INTERNAL_SERVER_ERROR.into_response()
-            }
-        };
-    }
-
-    // Execute the specified command
-    let cmd_key = cmd_key.unwrap();
     let cmd_info = match admin_cmds.get_action_by_url(&cmd_key) {
         Some(cmd) => cmd,
-        None => {
-            let template = ExecutionError {
-                message: "Invalid command",
-            };
-            return match template.render() {
-                Ok(html) => with_nocache!(Html(html)),
-                Err(err) => {
-                    tracing::error!("Template error: {}", err);
-                    StatusCode::INTERNAL_SERVER_ERROR.into_response()
-                }
-            };
-        }
+        None => return render_error(StatusCode::NOT_FOUND, "Invalid command"),
     };
 
     // Log the command execution
     tracing::info!(
-        "Executing command: {} ({})",
+        "Executing command: {} ({}) requested from IP {}",
         &cmd_info.command,
-        &cmd_info.url_name
+        &cmd_info.url_name,
+        ip
     );
 
-    let host = admin_cmds.hosts.get(&cmd_info.host).unwrap();
+    let host = match admin_cmds.hosts.get(&cmd_info.host) {
+        Some(host) => host,
+        None => return render_error(StatusCode::INTERNAL_SERVER_ERROR, "Invalid host"),
+    };
     let output = execute_command(&cmd_info.command, &host.address).await;
 
     let template = ActionResult {

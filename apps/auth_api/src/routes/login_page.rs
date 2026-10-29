@@ -27,7 +27,7 @@ pub async fn login_page(
         }
         Ok(None) => {}
         Err(_) => {
-            welcome_message = format!("Unknown user, please login");
+            welcome_message = "Session expired, please login".to_string();
         }
     }
 
