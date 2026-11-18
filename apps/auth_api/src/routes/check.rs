@@ -16,7 +16,7 @@ pub async fn check(
     cookies: Cookies,
     headers: HeaderMap,
 ) -> Response {
-    let username = identify_user_with_cookie(&cookies, &state)
+    let username = identify_user_with_cookie(&headers, &state)
         .await
         .unwrap_or(None);
 

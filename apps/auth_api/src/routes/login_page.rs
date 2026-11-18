@@ -2,26 +2,25 @@ use app_errors::AppError;
 use askama::Template;
 use axum::{
     extract::State,
-    http::StatusCode,
+    http::{HeaderMap, StatusCode},
     response::{Html, IntoResponse, Response},
 };
 
 use limiters_middleware::RateLimiter;
 use state::AppState;
 
-use tower_cookies::Cookies;
 use utils::with_nocache;
 
 use crate::templates::LoginTemplate;
 use auth::identify_user_with_cookie;
 
 pub async fn login_page(
-    cookies: Cookies,
+    headers: HeaderMap,
     State((state, _)): State<(AppState, RateLimiter)>,
 ) -> Result<Response, AppError> {
     let mut welcome_message = String::new();
 
-    match identify_user_with_cookie(&cookies, &state).await {
+    match identify_user_with_cookie(&headers, &state).await {
         Ok(Some(username)) => {
             welcome_message = format!("Welcome back, {}!", username);
         }
