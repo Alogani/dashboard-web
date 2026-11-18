@@ -30,7 +30,7 @@ pub async fn auth_middleware(
     let app_config = state.get_app_config();
 
     // Check if user is authenticated
-    match identify_user_with_cookie(&cookies, &state).await {
+    match identify_user_with_cookie(req.headers(), &state).await {
         Ok(Some(username)) => {
             // Check if user has access to this route
             if app_config.is_access_allowed(None, &path, Some(&username)) {
